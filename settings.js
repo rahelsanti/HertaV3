@@ -9,7 +9,7 @@ const stringSimilarity = require("string-similarity");
 //======== OWNER SETTINGS =======\\
 global.nomerOwner = "6281401689098";
 global.nomerOwner2 = "6283178648904";
-global.nomerBot = "6283102118078";
+global.nomerBot = "6285811327307";
 global.botName = "Herta - V2"
 global.ownerName = "© SanzOnly"; 
 global.gender = 'Boys'  
