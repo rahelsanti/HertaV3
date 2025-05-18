@@ -106,6 +106,9 @@ const items = {
     tiketcn: {
       money: 30000,
     },
+    cnclan: {
+      money: 50000,
+    },
    
   },
   sell: {
