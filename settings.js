@@ -9,7 +9,7 @@ const stringSimilarity = require("string-similarity");
 //======== OWNER SETTINGS =======\\
 global.nomerOwner = "6281401689098";
 global.nomerOwner2 = "6281401689098";
-global.nomerBot = "6281401689098";
+global.nomerBot = "447442352826";
 global.botName = "Herta - V2"
 global.ownerName = "© SanzOnly"; 
 global.gender = 'Boys'  
@@ -23,7 +23,7 @@ global.sgc = 'https://whatsapp.com/channel/0029VafEhDUIXnlyGgMSgH2u'
 
 
 //======= BOT SETTINGS ======\\
-global.pairingCode = false // true / false
+global.pairingCode = true // true / false
 global.botName = "Herta"
 global.session = "session" 
 global.runWith = "Heroku"
