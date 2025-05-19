@@ -15,10 +15,10 @@ export function generateHpBar(hp, maxHp = 100) {
     return '▬'.repeat(filledBars) + '▭'.repeat(emptyBars) + `\n➥${hp}/${maxHp} `;
 }
 
-const defaultClanThumbnail = 'https://files.catbox.moe/e3v3cm.jpg';
+const defaultClanThumbnail = 'https://files.catbox.moe/qfizya.jpg';
 
 export function getClanThumbnail() {
-    return 'https://files.catbox.moe/e3v3cm.jpg';
+    return 'https://files.catbox.moe/qfizya.jpg';
 }
 
 export async function handler(m, { conn, text, usedPrefix, command, args }) {
@@ -255,22 +255,12 @@ export async function handler(m, { conn, text, usedPrefix, command, args }) {
                     global.db.data.clanWar[warClanId].status = 'ongoing';
                     global.db.data.clanWar[opponentId].status = 'ongoing';
                     
-                    conn.reply(m.chat, 'Clan war dimulai! Perang akan berlangsung dengan serangan setiap 3 detik.', m);
-                    
-                    // Notify both clan leaders that war has started
-                    const clan1Leader = global.db.data.clans[warClanId].leader;
-                    const clan2Leader = global.db.data.clans[opponentId].leader;
-                    
-                    conn.reply(clan1Leader, `⚔️ WAR DIMULAI ⚔️\nClan ${global.db.data.clans[warClanId].name} VS Clan ${global.db.data.clans[opponentId].name}`, null);
-                    conn.reply(clan2Leader, `⚔️ WAR DIMULAI ⚔️\nClan ${global.db.data.clans[opponentId].name} VS Clan ${global.db.data.clans[warClanId].name}`, null);
-                    
-                    startWarWithDelay(warClanId, opponentId, conn);
+                    conn.reply(m.chat, '⚔️ Clan war dimulai! Tunggu 5 menit untuk hasil perang.', m);
+                    setTimeout(() => startWarWithDelay(warClanId, opponentId, conn, m.chat), 300000); // 5 minutes delay
                 } else {
                     delete global.db.data.clanWar[warClanId];
                     delete global.db.data.clanWar[opponentId];
-                    conn.reply(m.chat, 'Clan war ditolak.', m);
-                    // Notify the opponent leader that war was declined
-                    conn.reply(global.db.data.clans[opponentId].leader, `Clan ${global.db.data.clans[warClanId].name} menolak tantangan war anda.`, null);
+                    conn.reply(m.chat, '❌ Clan war ditolak.', m);
                 }
                 return;
             }
@@ -396,22 +386,55 @@ handler.command = /^(clan)$/i;
 
 export default handler;
 
-async function startWarWithDelay(clan1Id, clan2Id, conn) {
+async function startWarWithDelay(clan1Id, clan2Id, conn, chatId) {
     const clan1 = global.db.data.clans[clan1Id];
     const clan2 = global.db.data.clans[clan2Id];
-    
-    let clan1Leader = clan1.leader;
-    let clan2Leader = clan2.leader;
-    
-    clan1.hp = 50;
-    clan2.hp = 50;
-    
-    conn.reply(clan1Leader, `⚔️ STATUS WAR ⚔️\nClan ${clan1.name}: HP ${clan1.hp}\nClan ${clan2.name}: HP ${clan2.hp}`, null);
-    conn.reply(clan2Leader, `⚔️ STATUS WAR ⚔️\nClan ${clan2.name}: HP ${clan2.hp}\nClan ${clan1.name}: HP ${clan1.hp}`, null);
-    
+
+    clan1.hp = 100;
+    clan2.hp = 100;
+
+    let battleLogs = `⚔️ *WAR DIMULAI* ⚔️\n\n🏰 *${clan1.name}* VS 🏰 *${clan2.name}*\n\n`;
     let attackingClanId = Math.random() < 0.5 ? clan1Id : clan2Id;
-    
- await runWarLoop(clan1Id, clan2Id, attackingClanId, conn);
+
+    for (let round = 1; clan1.hp > 0 && clan2.hp > 0; round++) {
+        let damage = getRandom(5, 15);
+        let defendingClanId = attackingClanId === clan1Id ? clan2Id : clan1Id;
+        let attackingClan = global.db.data.clans[attackingClanId];
+        let defendingClan = global.db.data.clans[defendingClanId];
+
+        defendingClan.hp -= damage;
+        if (defendingClan.hp < 0) defendingClan.hp = 0;
+
+        battleLogs += `🌀 *Round ${round}*\n` +
+            `⚔️ *${attackingClan.name}* menyerang *${defendingClan.name}* dengan damage *${damage}*.\n` +
+            `❤️ *${attackingClan.name} HP:* ${attackingClan.hp}\n` +
+            `❤️ *${defendingClan.name} HP:* ${defendingClan.hp}\n\n`;
+
+        attackingClanId = defendingClanId;
+        await sleep(3000); // Delay between rounds
+    }
+
+    let winnerClanId = clan1.hp > 0 ? clan1Id : clan2Id;
+    let loserClanId = winnerClanId === clan1Id ? clan2Id : clan1Id;
+
+    let stealAmount = Math.floor(global.db.data.clans[loserClanId].catm * 0.2);
+    global.db.data.clans[loserClanId].catm -= stealAmount;
+    global.db.data.clans[winnerClanId].catm += stealAmount;
+
+    battleLogs += `🏆 *WAR SELESAI* 🏆\n\n` +
+        `🎉 *Pemenang:* *${global.db.data.clans[winnerClanId].name}*\n` +
+        `💰 *Hadiah:* ${stealAmount} ATM dirampas dari *${global.db.data.clans[loserClanId].name}*\n\n` +
+        `❌ *Kalah:* *${global.db.data.clans[loserClanId].name}*\n`;
+
+    global.db.data.clanWar[winnerClanId].status = 'completed';
+    global.db.data.clanWar[loserClanId].status = 'completed';
+
+    conn.reply(chatId, battleLogs);
+
+    setTimeout(() => {
+        delete global.db.data.clanWar[clan1Id];
+        delete global.db.data.clanWar[clan2Id];
+    }, 5000);
 }
 
 function sleep(ms) {
