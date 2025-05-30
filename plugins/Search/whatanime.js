@@ -21,7 +21,7 @@ let handler = async (m, { conn, usedPrefix }) => {
 };
 handler.help = ["whatanime"];
 handler.tags = ["anime"];
-handler.command = /^(wait|whatanime|source)$/i;
+handler.command = /^(whatanime)$/i;
 handler.limit = true
 handler.register = true
 
