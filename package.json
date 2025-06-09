@@ -14,7 +14,7 @@
     "npm": "10.x"
   },
   "scripts": {
-    "start": "node --optimize_for_size --max_old_space_size=2048 --gc_interval=100 --expose-gc index.js"
+    "start": "node --optimize_for_size --max_old_space_size=512 --gc_interval=100 --expose-gc index.js"
   },
   "author": "Dittaz",
   "license": "MIT",
