@@ -12,7 +12,7 @@ let handler = async (m, { conn }) => {
   },
   {
     title: '*📒 GROUP ACCESS*',
-    body: '30 Days : Rp25.000,- (Bonus 5Days)\n60 Days : Rp50.000,- (Bonus 10Days)\n365 Days : Rp250.000,- (Bonus 15Days)\n\n*❗Keuntungan :*\n• Bot Dapat digunakan seluruh member Group 👥\n• Member dapat menggunakan seluruh fitur yang hanya bisa di Group 🔐\n• Member dapat memainkan fitur Game & RPG 🎮',
+    body: '30 Days : Rp25.000,- (Bonus 5Days)\n60 Days : Rp50.000,- (Bonus 10Days)\n365 Days : Rp250.000,- (Bonus 15Days)\n\n*❗Keuntungan :*\n• Bot Dapat digunakan seluruh member Group 👥\n• Member dapat menggunakan seluruh fitur yang hanya bisa di Group 🔐\n• Member dapat memainkan fitur Game & RPG 🎮\n',
     buttonText: 'Order Disini',
     imageUrl: 'https://files.catbox.moe/1t9wyt.jpg',
     url: 'https://wa.me/6281401689098?text=Min+mau+sewa+Group+Access'
