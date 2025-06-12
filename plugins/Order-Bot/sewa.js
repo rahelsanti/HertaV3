@@ -7,7 +7,7 @@ let handler = async (m, { conn }) => {
     title: '*📕 PREMIUM ACCESS*',
     body: '7 Days : Rp5.000\n15 Days : Rp10.000,- (Bonus 3Days)\n30 Days : Rp15.000,- (Bonus 5Days)\nUnlimited Days : Rp50.000,-\n\n*❗Keuntungan :*\n• Unlimited Limit (Limit tak terbatas) 📍\n• Bonus EXP/Money 💰\n• Dapat Menggunakan Bot Secara Private 🔒\n• Dan masih banyak lagi 🔮',
     buttonText: 'Order Disini',
-    imageUrl: 'https://files.catbox.moe/0s0vh3.jpg',
+    imageUrl: 'https://files.catbox.moe/kdic8k.jpg',
     url: 'https://wa.me/6281401689098?text=Min+mau+sewa+Premium+Access'
   },
   {
