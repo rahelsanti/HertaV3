@@ -15,17 +15,13 @@ jobs:
       run: |
         curl https://cli-assets.heroku.com/install.sh | sh
 
-    - name: Login to Heroku Container Registry
-      env:
-        HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
-      run: |
-        echo $HEROKU_API_KEY | heroku auth:token
-        echo $HEROKU_API_KEY | docker login --username=_ --password-stdin registry.heroku.com
-
-    - name: Build and Push Docker image to Heroku
-      run: |
-        heroku container:push web --app herta
-
-    - name: Release Docker image on Heroku
-      run: |
-        heroku container:release web --app herta
+    - name: Login to Heroku via API key (non-interaktif)
+  env:
+    HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+  run: |
+    echo "$HEROKU_API_KEY" > ~/.netrc
+    echo "machine api.heroku.com" >> ~/.netrc
+    echo "  login $HEROKU_API_KEY" >> ~/.netrc
+    echo "machine git.heroku.com" >> ~/.netrc
+    echo "  login $HEROKU_API_KEY" >> ~/.netrc
+    docker login --username=_ --password=$HEROKU_API_KEY registry.heroku.com
