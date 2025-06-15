@@ -1,7 +1,7 @@
 name: Deploy ke Heroku
 
 on:
-  workflow_dispatch:  # hanya berjalan ketika dipicu manual (dari bot)
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -14,14 +14,19 @@ jobs:
       - name: Install Heroku CLI
         run: curl https://cli-assets.heroku.com/install.sh | sh
 
-      - name: Login ke Heroku
-        env:
-          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
-        run: echo "$HEROKU_API_KEY" | heroku auth:token && heroku login --interactive
-
-      - name: Git push ke Heroku
+      - name: Login ke Heroku via HEROKU_API_KEY
         env:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
         run: |
-          git remote add heroku https://heroku:$HEROKU_API_KEY@git.heroku.com/herta.git
-          git push heroku HEAD:main -f
+          echo "$HEROKU_API_KEY" | heroku auth:token
+          heroku container:login
+
+      - name: Push ke Heroku Container
+        run: heroku container:push web --app herta
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+
+      - name: Rilis Web Heroku
+        run: heroku container:release web --app herta
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
