@@ -1,7 +1,7 @@
 name: Deploy ke Heroku
 
 on:
-  workflow_dispatch:  # hanya berjalan jika dipanggil lewat startdeploy
+  workflow_dispatch:  # hanya berjalan ketika dipicu manual (dari bot)
 
 jobs:
   deploy:
@@ -11,15 +11,17 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Deploy ke Heroku
+      - name: Install Heroku CLI
+        run: curl https://cli-assets.heroku.com/install.sh | sh
+
+      - name: Login ke Heroku
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: echo "$HEROKU_API_KEY" | heroku auth:token && heroku login --interactive
+
+      - name: Git push ke Heroku
         env:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
         run: |
-          git config --global user.email "you@example.com"
-          git config --global user.name "Your Name"
-          git clone https://heroku:${{ secrets.HEROKU_API_KEY }}@git.heroku.com/herta.git
-          cd herta
-          rsync -av --exclude=.git ../ .
-          git add .
-          git commit -m "Deploy via GitHub Actions"
-          git push https://heroku:${{ secrets.HEROKU_API_KEY }}@git.heroku.com/herta.git HEAD:main
+          git remote add heroku https://heroku:$HEROKU_API_KEY@git.heroku.com/herta.git
+          git push heroku HEAD:main -f
