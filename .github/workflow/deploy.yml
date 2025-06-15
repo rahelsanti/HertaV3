@@ -1,0 +1,32 @@
+name: Deploy ke Heroku
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install Heroku CLI
+        run: curl https://cli-assets.heroku.com/install.sh | sh
+
+      - name: Login ke Heroku via HEROKU_API_KEY
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: |
+          echo "$HEROKU_API_KEY" | heroku auth:token
+          heroku container:login
+
+      - name: Push ke Heroku Container
+        run: heroku container:push web --app herta
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+
+      - name: Rilis Web Heroku
+        run: heroku container:release web --app herta
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
