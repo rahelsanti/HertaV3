@@ -1,7 +1,7 @@
 name: Deploy ke Heroku
 
 on:
-  workflow_dispatch:  # hanya berjalan ketika dipicu manual (dari bot)
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -10,6 +10,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Ini penting agar tidak shallow
 
       - name: Install Heroku CLI
         run: curl https://cli-assets.heroku.com/install.sh | sh
@@ -18,6 +20,9 @@ jobs:
         env:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
         run: heroku auth:whoami
+
+      - name: Git fetch all (unshallow)
+        run: git fetch --unshallow
 
       - name: Git push ke Heroku
         env:
