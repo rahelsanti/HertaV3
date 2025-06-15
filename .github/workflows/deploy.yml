@@ -2,6 +2,9 @@ name: Deploy ke Heroku
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - master  # atau ganti dengan nama branch kamu
 
 jobs:
   deploy:
@@ -11,15 +14,30 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Setup Git
-        run: |
-          git config --global user.email "github-actions@github.com"
-          git config --global user.name "GitHub Actions"
+      - name: Install Heroku CLI
+        run: curl https://cli-assets.heroku.com/install.sh | sh
 
-      - name: Add Heroku remote
-        run: |
-          git remote add heroku https://heroku:${{ secrets.HEROKU_API_KEY }}@git.heroku.com/herta.git
+      - name: Login ke Heroku
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: echo "$HEROKU_API_KEY" | heroku auth:token
 
-      - name: Push to Heroku
-        run: |
-          git push heroku HEAD:main --force
+      - name: Set Heroku stack ke container
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: heroku stack:set container --app herta
+
+      - name: Heroku Container Login
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: heroku container:login
+
+      - name: Push Docker ke Heroku
+        run: heroku container:push web --app herta
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+
+      - name: Rilis ke Heroku
+        run: heroku container:release web --app herta
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
