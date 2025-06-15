@@ -13,13 +13,20 @@ jobs:
       - name: Install Heroku CLI
         run: curl https://cli-assets.heroku.com/install.sh | sh
 
-      - name: Login to Heroku
+      - name: Docker Login to Heroku
         run: echo "${{ secrets.HEROKU_API_KEY }}" | docker login --username=_ --password-stdin registry.heroku.com
 
-      - name: Build and Push Docker Image
+      - name: CLI Login to Heroku
         run: |
-          docker build -t registry.heroku.com/herta/web .
-          docker push registry.heroku.com/herta/web
+          echo "machine api.heroku.com\n  login ${{ secrets.HEROKU_EMAIL }}\n  password ${{ secrets.HEROKU_API_KEY }}" > ~/.netrc
+          echo "machine git.heroku.com\n  login ${{ secrets.HEROKU_EMAIL }}\n  password ${{ secrets.HEROKU_API_KEY }}" >> ~/.netrc
+          heroku auth:whoami
+
+      - name: Build Docker
+        run: docker build -t registry.heroku.com/herta/web .
+
+      - name: Push Docker to Heroku
+        run: docker push registry.heroku.com/herta/web
 
       - name: Release to Heroku
         run: heroku container:release web --app herta
