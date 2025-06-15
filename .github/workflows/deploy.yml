@@ -1,4 +1,4 @@
-name: Manual Deploy to Heroku
+name: Deploy ke Heroku
 
 on:
   workflow_dispatch:
@@ -6,27 +6,22 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v3
 
       - name: Install Heroku CLI
         run: curl https://cli-assets.heroku.com/install.sh | sh
 
-      - name: Docker Login to Heroku
-        run: echo "${{ secrets.HEROKU_API_KEY }}" | docker login --username=_ --password-stdin registry.heroku.com
-
-      - name: CLI Login to Heroku
+      - name: Setup Heroku Auth
         run: |
-          echo "machine api.heroku.com\n  login ${{ secrets.HEROKU_EMAIL }}\n  password ${{ secrets.HEROKU_API_KEY }}" > ~/.netrc
-          echo "machine git.heroku.com\n  login ${{ secrets.HEROKU_EMAIL }}\n  password ${{ secrets.HEROKU_API_KEY }}" >> ~/.netrc
-          heroku auth:whoami
+          echo "machine api.heroku.com\n  login listyaromalia@pesawaran.live\n  password HRKU-8e68c006-b2e5-4d69-9ecc-7f9855cf2652" > ~/.netrc
+          echo "machine git.heroku.com\n  login listyaromalia@pesawaran.live\n  password HRKU-8e68c006-b2e5-4d69-9ecc-7f9855cf2652" >> ~/.netrc
+          heroku container:login
 
-      - name: Build Docker
-        run: docker build -t registry.heroku.com/herta/web .
+      - name: Push ke Heroku Container
+        run: heroku container:push web --app herta
 
-      - name: Push Docker to Heroku
-        run: docker push registry.heroku.com/herta/web
-
-      - name: Release to Heroku
+      - name: Rilis Web Heroku
         run: heroku container:release web --app herta
