@@ -11,18 +11,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0  # Ini penting agar tidak shallow
+          fetch-depth: 0  # Pastikan history lengkap
 
       - name: Install Heroku CLI
         run: curl https://cli-assets.heroku.com/install.sh | sh
 
-      - name: Cek login Heroku
+      - name: Login Heroku
         env:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
-        run: heroku auth:whoami
-
-      - name: Git fetch all (unshallow)
-        run: git fetch --unshallow
+        run: echo "$HEROKU_API_KEY" | heroku auth:token
 
       - name: Git push ke Heroku
         env:
