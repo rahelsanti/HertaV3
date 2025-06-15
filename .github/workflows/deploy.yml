@@ -1,10 +1,7 @@
 name: Deploy ke Heroku
 
 on:
-  workflow_dispatch:
-  push:
-    branches:
-      - master  # atau ganti dengan nama branch kamu
+  workflow_dispatch:  # hanya jalan kalau dipanggil manual lewat API (fitur startdeploy)
 
 jobs:
   deploy:
@@ -17,27 +14,19 @@ jobs:
       - name: Install Heroku CLI
         run: curl https://cli-assets.heroku.com/install.sh | sh
 
-      - name: Login ke Heroku
+      - name: Login ke Heroku via HEROKU_API_KEY
         env:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
-        run: echo "$HEROKU_API_KEY" | heroku auth:token
+        run: |
+          echo "$HEROKU_API_KEY" | heroku auth:token
+          heroku container:login
 
-      - name: Set Heroku stack ke container
-        env:
-          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
-        run: heroku stack:set container --app herta
-
-      - name: Heroku Container Login
-        env:
-          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
-        run: heroku container:login
-
-      - name: Push Docker ke Heroku
+      - name: Push ke Heroku Container
         run: heroku container:push web --app herta
         env:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
 
-      - name: Rilis ke Heroku
+      - name: Rilis Web Heroku
         run: heroku container:release web --app herta
         env:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
