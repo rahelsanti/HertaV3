@@ -14,10 +14,10 @@ jobs:
       - name: Install Heroku CLI
         run: curl https://cli-assets.heroku.com/install.sh | sh
 
-      - name: Login ke Heroku
+      - name: Cek login Heroku
         env:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
-        run: echo "$HEROKU_API_KEY" | heroku auth:token && heroku login --interactive
+        run: heroku auth:whoami
 
       - name: Git push ke Heroku
         env:
