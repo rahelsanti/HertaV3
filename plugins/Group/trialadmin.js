@@ -30,7 +30,7 @@ ${usedPrefix + command} @user 10m
 
   schedule.scheduleJob(executeTime, async () => {
     await conn.groupParticipantsUpdate(m.chat, [target], 'demote');
-    conn.sendMessage(m.chat, { text: `⏱️ Waktu habis! @${target.split('@')[0]} telah di-*demote* otomatis.`, mentions: [target] });
+    conn.sendMessage(m.chat, { text: `⏱️ Waktu habis! @${target.split('@')[0]} telah di*demote* otomatis.`, mentions: [target] });
   });
 };
 
