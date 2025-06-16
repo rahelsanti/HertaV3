@@ -1,47 +1,33 @@
-let handler = async (m, { q, conn, isOwner, setReply }) => {
-  try {
-    const isQuotedViewOnce = m.type === "extendedTextMessage" && m.content.includes("viewOnceMessage");
-    const { downloadContentFromMessage } = (await import("baileys")).default;
+let handler = async (m, { conn }) => {
+	let q = m.quoted ? m.quoted : m
+	try {
+	let mmk = await q.download?.()
+	if (q.mimetype.includes('audio')) {
+	let audio = await toPTT(mmk, 'mp4')
+	conn.sendFile(m.chat, audio.data, 'audio.mp3', '', m, true, { mimetype: 'audio/mp4' })
+	} else {
+	conn.sendFile(m.chat, mmk, null, 'haha', m)
+	}
+	} catch (e) {
+      m.reply('Ini bukan pesan viewonce!!')
+	}
+}
 
-    if (!isQuotedViewOnce) {
-      return setReply("Reply viewonce nya");
-    }
-
-    let view = m.quoted.message;
-    let Type = Object.keys(view)[0];
-
-    let media = await downloadContentFromMessage(
-      view[Type],
-      Type === "imageMessage" ? "image" : Type === "audioMessage" ? "audio" : "video"
-    );
-
-    let buffer = Buffer.from([]);
-
-    for await (const chunk of media) {
-      buffer = Buffer.concat([buffer, chunk]);
-    }
-
-    if (/video/.test(Type)) {
-      await conn.sendFile(m.chat, buffer, "media.mp4", view[Type].caption || "", m);
-    } else if (/audio/.test(Type)) {
-      await conn.sendMessage(m.chat, { audio: buffer }, { quoted: m });
-    } else if (/image/.test(Type)) {
-      if (!m.isGroup) {
-        await conn.sendFile(m.botNumber, buffer, "media.jpg", view[Type].caption || "", m);
-      } else {
-        await conn.sendFile(m.chat, buffer, "media.jpg", view[Type].caption || "", m);
-      }
-    }
-  } catch (err) {
-    console.error(err);
-    setReply("Terjadi kesalahan saat memproses view once message.");
-  }
-};
-
-handler.help = ["reply viewonce"];
-handler.tags = ["admin"];
-handler.command = ["read", "aaaa"];
-//handler.group = true;
-//handler.admin = true;
+handler.help = ['readviewonce'];
+handler.tags = ['tools'];
+handler.command = ['readviewonce', 'read', 'rvo', 'liat', 'readvo'];
 
 export default handler;
+
+const OPUS_CODEC = 'libopus';
+
+async function toPTT(buffer, ext) {
+	return ffmpeg(buffer, [
+		'-vn',
+		'-c:a', OPUS_CODEC,
+		'-b:a', '128k',
+		'-vbr', 'on',
+		'-ar', '48000',
+		'-ac', '2',
+	], ext, 'opus');
+}
