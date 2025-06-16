@@ -38,6 +38,7 @@
     "cfonts": "^3.1.1",
     "chalk": "^5.3.0",
     "cheerio": "github:Tiooxy/cheerio",
+    "chess.js": "^1.4.0",
     "child_process": "^1.0.2",
     "chokidar": "^3.5.3",
     "cloudku-uploader": "^2.2.5",
