@@ -52,48 +52,28 @@ const seli = Tnow - m.messageTimestamp.low
 if (seli > Intervalmsg) return console.log((`Pesan ${Intervalmsg} detik yang lalu diabaikan agar tidak nyepam`))
 
 const { type,args, reply,sender,ucapanWaktu,from,botNumber,senderNumber,groupName,groupId,groupMembers,groupDesc,groupOwner,pushname,itsMe,isGroup,mentionByTag,mentionByReply,users,budy,content,body } = m
-// ✅ Deteksi premium dari user premium, owner, atau admin grup VIP
-const chat = db.data.chats[m.chat] || {}
+const prem = db.data.users[sender].premiumTime !== 0 
 
-if (chat.isVip && Date.now() > chat.vipExpired) {
-  chat.isVip = false
-  chat.adminVipAccess = false
-}
 
-const isOwner = ownerNumber.includes(sender) || _data.checkDataId("owner", sender, DataId)
-const isGroupAdminVip = m.isGroup && chat.isVip && chat.adminVipAccess && m.isAdmin
-const isPremiumUser = (db.data.users[sender].premiumTime || 0) > 0
-const isPremium = isOwner || isPremiumUser || isGroupAdminVip
-
-// ✅ Prefix handling
 if (multi){
-  var prefix = /^[°zZ#,.''()√%!¢£¥€π¤ΠΦ&<`™©®Δ^βα¦|/\\©^]/.test(body) ? body.match(/^[°zZ#,.''()√%¢£¥€π¤ΠΦ&<!`™©®Δ^βα¦|/\\©^]/gi) : '.'
-  var thePrefix = "Multi Prefix"
+var prefix = /^[°zZ#,.''()√%!¢£¥€π¤ΠΦ&<`™©®Δ^βα¦|/\\©^]/.test(body) ? body.match(/^[°zZ#,.''()√%¢£¥€π¤ΠΦ&<!`™©®Δ^βα¦|/\\©^]/gi) : '.'
+var thePrefix = "Multi Prefix"
 } else {
-  var prefix = prefa
-  var thePrefix = prefa
+var prefix = prefa
+var thePrefix = prefa
 }
-
 const isCmd = body.startsWith(prefix)
-const isCommand = isCmd ? body.replace(prefix, '').trim().split(/ +/).shift().toLowerCase() : ""
+const isCommand = isCmd? body.replace(prefix, '').trim().split(/ +/).shift().toLowerCase() :""
 const q = args.join(' ')
 const time = moment().tz('Asia/Jakarta').format('HH:mm')
-
-// ✅ Gunakan isPremium (bukan prem) untuk menentukan command
-const command = (isPremium || isOwner)
-  ? body.replace(prefix, '').trim().split(/ +/).shift().toLowerCase()
-  : isCommand
-
+const isOwner = ownerNumber.includes(sender) || _data.checkDataId ("owner", sender, DataId)
+const command = (prem || isOwner)? body.replace(prefix, '').trim().split(/ +/).shift().toLowerCase() : isCommand
 const theOwner = sender == Ownerin
-const quoted = m.quoted ? m.quoted : m.msg === undefined ? m : m.msg
+const quoted = m.quoted ? m.quoted : m.msg === undefined? m: m.msg
 const mime = (quoted.msg || quoted).mimetype || ''
 const numberQuery = q.replace(new RegExp("[()+-/ +/]", "gi"), "") + `@s.whatsapp.net`
-const Input = m.isGroup
-  ? mentionByTag[0] ? mentionByTag[0]
-    : mentionByReply ? mentionByReply
-    : q ? numberQuery : false
-  : false
-const replyCommand = isCmd ? isCmd : allcommand.includes(toFirstCase(command))
+const Input = m.isGroup? mentionByTag[0]? mentionByTag[0] : mentionByReply ? mentionByReply : q? numberQuery : false : false
+const replyCommand = isCmd? isCmd : allcommand.includes(toFirstCase(command))
 const user = global.db.data.users[m.sender]
 const botRun = global.db.data.others['runtime']
 const botTime = botRun? (new Date - botRun.runtime) :  "Tidak terdeteksi"
