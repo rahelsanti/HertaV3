@@ -1,16 +1,22 @@
 import { promises, readFileSync } from 'fs'
 let misi = JSON.parse(readFileSync('./lib/misi.json'))
 
-const rankMultiplier = {
-  "SSS": 3,
-  "SS": 2.5,
-  "S": 2,
-  "A": 1.75,
-  "B": 1.5,
-  "C": 1.25,
-  "D": 1,
-  "E": 0.75
-};
+const rankDifficulty = {
+  "SS": { name: "Sangat Sulit", successRate: 30, color: "🔴" },
+  "S": { name: "Sulit", successRate: 45, color: "🟠" },
+  "A": { name: "Menantang", successRate: 60, color: "🟡" },
+  "B": { name: "Sedang", successRate: 70, color: "🔵" },
+  "C": { name: "Mudah", successRate: 80, color: "🟢" },
+  "D": { name: "Sangat Mudah", successRate: 90, color: "⚪" },
+  "E": { name: "Pemula", successRate: 95, color: "🟤" }
+}
+
+function createProgressBar(current, max, length = 10) {
+  const percentage = Math.max(0, Math.min(100, (current / max) * 100))
+  const filled = Math.round((percentage / 100) * length)
+  const empty = length - filled
+  return '▰'.repeat(filled) + '▱'.repeat(empty) + ` ${current}/${max}`
+}
 
 async function handler(m, { conn, args, text , usedPrefix, command }) {
   conn.mission = conn.mission ? conn.mission : {}
@@ -32,29 +38,61 @@ async function handler(m, { conn, args, text , usedPrefix, command }) {
     if(new Date - user.lastmission <= cooldown) return m.reply(`Kamu Sudah Menjalankan Misi, Tunggu Selama ${clockString(timers)}`)
     if(user.skill == "") return m.reply("Kamu Belum Mempunyai Skill")
 
-    let multiplier = rankMultiplier[json.rank] || 1;
-
     if(!(m.sender in conn.mission)) {
       conn.mission[m.sender] = {
         sender: m.sender,
         timeout: setTimeout(() => {m.reply('timed out');delete conn.mission[m.sender]}, 60000),
         json
       }
-      let caption = `*📝 Misi Telah Di Berikan*
-📊 *Rank:* ${json.rank}
-✉️ *Misi:* ${json.misii}
-📦 *Reward:* 
-🧪 Exp: ${json.exp}
-💎 Diamond: ${json.diamond}
+      
+      let rank = rankDifficulty[json.rank] || rankDifficulty["E"]
+      let armorBar = createProgressBar(user.armordurability || 0, 100)
+      let swordBar = createProgressBar(user.sworddurability || 0, 100)
+      let healthBar = createProgressBar(user.health || 0, 200)
+      let staminaBar = createProgressBar(user.stamina || 0, 200)
+      
+      let fkontak = {
+        "key": {
+          "participants": "0@s.whatsapp.net",
+          "remoteJid": "status@broadcast",
+          "fromMe": false,
+          "id": "Halo"
+        },
+        "message": {
+          "contactMessage": {
+            "vcard": `BEGIN:VCARD\nVERSION:3.0\nN:Sy;Bot;;;\nFN:y\nitem1.TEL;waid=${m.sender.split('@')[0]}:${m.sender.split('@')[0]}\nitem1.X-ABLabel:Ponsel\nEND:VCARD`
+          }
+        },
+        "participant": "0@s.whatsapp.net"
+      }
 
-Kamu akan kehilangan:
-❤️ Health: ${json.health}
-⚡ Stamina: ${json.stamina}
+      let caption = `╭─「 📝 *MISI TERSEDIA* 」
+│ 
+├ ${rank.color} *Rank:* ${json.rank} (${rank.name})
+├ 📊 *Tingkat Kesulitan:* ${100 - rank.successRate}%
+├ ✉️ *Misi:* ${json.misii}
+│
+├─「 💰 *REWARD* 」
+├ 🧪 *Exp:* ${json.exp}
+├ 💎 *Diamond:* ${json.diamond}
+${json.gold ? `├ 🪙 *Gold:* ${json.gold}` : ''}
+${json.emerald ? `├ 💚 *Emerald:* ${json.emerald}` : ''}
+│
+├─「 💸 *BIAYA* 」
+├ ❤️ *Health:* -${json.health}
+├ ⚡ *Stamina:* -${json.stamina}
+│
+├─「 👤 *STATUS KARAKTER* 」
+├ ❤️ *Health:* ${healthBar}
+├ ⚡ *Stamina:* ${staminaBar}
+│
+├─「 ⚔️ *EQUIPMENT STATUS* 」
+├ 🥼 *Armor Lv.${user.armor || 1}:* ${armorBar}
+├ ⚔️ *Sword Lv.${user.sword || 1}:* ${swordBar}
+│
+╰─「 Ketik *terima* atau *tolak* 」`
 
-Ketik *terima* Untuk Menerima
-Ketik *tolak* Untuk Membatalkan
-`
-      return conn.reply(m.chat, caption, m) 
+      return conn.sendMessage(m.chat, { text: caption }, { quoted: fkontak })
     }
   } catch (e) {
     console.error(e)
@@ -89,88 +127,145 @@ handler.before = async m => {
   if(new Date - user.lastmission <= cooldown) return m.reply(`Kamu Sudah Melakukan Misi, Mohon Tunggu ${clockString(timers)}`)
   if(!user.skill) return m.reply("Kamu Belum Mempunyai Skill")
 
-  let multiplier = rankMultiplier[json.rank] || 1;
+  // Simplified success/failure logic based on rank difficulty
+  let rank = rankDifficulty[json.rank] || rankDifficulty["E"]
+  let randomSuccess = Math.random() * 100
+  let isSuccess = randomSuccess <= rank.successRate
 
-  let randomaku = Math.floor(Math.random() * (101 * multiplier)).toString().trim();
-  let randomkamu = Math.floor(Math.random() * (24 * multiplier)).toString().trim(); 
-
-  let Aku = randomaku * 1;
-  let Kamu = randomkamu * 1;
   let aud = ["Mana Habis", "Stamina Habis", "Diserang Monster", "Dibokong Monster"];
-  let aui = aud[Math.floor(Math.random() * aud.length)];
+  let failureReason = aud[Math.floor(Math.random() * aud.length)];
 
   try {
     if(/^terima?$/i.test(txt)) {
-      if(Aku > Kamu) {
-        var cpt = `\nBerhasil Menyelesaikan Misi ${json.misii}`;
-        if (json.title && !user.title.includes(json.title)) {
-          m.reply(`\nKamu Mendapatkan Title ${json.title}`);
-          user.title += `\n${json.title}`;
-        }
-        m.reply(cpt);
-        user.exp += json.exp;
-        user.diamond += json.diamond;
+      let resultMessage = "";
+      let warnings = [];
+      let rank = rankDifficulty[json.rank] || rankDifficulty["E"]
 
-        user.armordurability -= 10 * multiplier;
-        user.sworddurability -= 10 * multiplier;
+      if(isSuccess) {
+        resultMessage = `╭─「 ✅ *MISI BERHASIL* 」
+│ 
+├ 🎯 *Misi:* ${json.misii}
+├ ${rank.color} *Rank:* ${json.rank} (${rank.name})
+│
+├─「 🎁 *REWARD DITERIMA* 」
+├ 🧪 *Exp:* +${json.exp}
+├ 💎 *Diamond:* +${json.diamond}
+${json.gold ? `├ 🪙 *Gold:* +${json.gold}` : ''}
+${json.emerald ? `├ 💚 *Emerald:* +${json.emerald}` : ''}
+╰─────────────────────`;
+        
+        user.exp += json.exp || 0;
+        user.diamond += json.diamond || 0;
+        if(json.gold) user.gold = (user.gold || 0) + json.gold;
+        if(json.emerald) user.emerald = (user.emerald || 0) + json.emerald;
 
-      } else if(Aku < Kamu) {
-        var flr = `\nGagal Menyelesaikan Misi ${json.misii} Dikarenakan ${aui}`;
-        m.reply(flr);
+        // Reduce durability on success
+        if(user.armordurability) user.armordurability -= 10;
+        if(user.sworddurability) user.sworddurability -= 10;
 
-        user.armordurability -= 20 * multiplier;
-        user.sworddurability -= 20 * multiplier;
+      } else {
+        resultMessage = `╭─「 ❌ *MISI GAGAL* 」
+│ 
+├ 🎯 *Misi:* ${json.misii}
+├ ${rank.color} *Rank:* ${json.rank} (${rank.name})
+├ 💥 *Alasan:* ${failureReason}
+╰─────────────────────`;
+
+        // Reduce more durability on failure
+        if(user.armordurability) user.armordurability -= 20;
+        if(user.sworddurability) user.sworddurability -= 20;
       }
 
-      // Pengecekan armor durability
-      if (user.armordurability <= 0) {
-        user.armor -= 1;
+      // Check and handle armor durability
+      if (user.armordurability && user.armordurability <= 0) {
+        user.armor = Math.max(0, (user.armor || 1) - 1);
         if (user.armor > 0) {
-          user.armordurability = user.armor * 50; // Menghitung durability berdasarkan jumlah armor
+          user.armordurability = 100;
         } else {
           user.armordurability = 0;
-          m.reply(`🥼Armor kamu hancur! Kamu harus membuat yang baru.`);
+          warnings.push("🥼 Armor kamu hancur!");
         }
       }
 
-      // Pengecekan sword durability
-      if (user.sworddurability <= 0) {
-        user.sword -= 1;
-        user.sworddurability = user.sword * 50; // Menghitung durability berdasarkan jumlah armor
-        m.reply(`⚔️Pedang kamu hancur! Kamu harus membuat yang baru.`);
+      // Check and handle sword durability
+      if (user.sworddurability && user.sworddurability <= 0) {
+        user.sword = Math.max(0, (user.sword || 1) - 1);
+        if (user.sword > 0) {
+          user.sworddurability = 100;
+        } else {
+          user.sworddurability = 0;
+          warnings.push("⚔️ Pedang kamu hancur!");
+        }
       }
 
-      user.health -= json.health * multiplier;
-      user.stamina -= json.stamina * multiplier;
+      // Reduce health and stamina
+      user.health = Math.max(0, (user.health || 200) - (json.health || 0));
+      user.stamina = Math.max(0, (user.stamina || 200) - (json.stamina || 0));
 
       if (user.health <= 0) {
-        user.health = 0;
-        m.reply("❤️ Health kamu habis! Gunakan potion untuk memulihkan, ketik *.heal health* untuk memulihkan Health kamu.");
+        warnings.push("❤️ Health kamu habis!");
       }
       if (user.stamina <= 0) {
-        user.stamina = 0;
-        m.reply("⚡ Stamina kamu habis! Gunakan potion untuk memulihkan, ketik *.heal stamina* untuk memulihkan Stamina kamu.");
+        warnings.push("⚡ Stamina kamu habis!");
       }
+
+      // Add current status bars
+      let armorBar = createProgressBar(user.armordurability || 0, 100)
+      let swordBar = createProgressBar(user.sworddurability || 0, 100)
+      let healthBar = createProgressBar(user.health || 0, 200)
+      let staminaBar = createProgressBar(user.stamina || 0, 200)
+
+      resultMessage += `\n\n╭─「 👤 *STATUS TERKINI* 」
+├ ❤️ *Health:* ${healthBar}
+├ ⚡ *Stamina:* ${staminaBar}
+├ 🥼 *Armor Lv.${user.armor || 1}:* ${armorBar}
+├ ⚔️ *Sword Lv.${user.sword || 1}:* ${swordBar}
+╰─────────────────────`
+
+      // Combine all messages into one
+      if (warnings.length > 0) {
+        resultMessage += `\n\n⚠️ *PERINGATAN:*\n${warnings.join('\n')}`;
+        if (warnings.some(w => w.includes('Health') || w.includes('Stamina'))) {
+          resultMessage += '\n\n💊 Ketik *.heal* untuk memulihkan Health/Stamina';
+        }
+        if (warnings.some(w => w.includes('hancur'))) {
+          resultMessage += '\n🔨 Ketik *.craft* untuk membuat equipment baru';
+        }
+      }
+
+      let fkontak = {
+        "key": {
+          "participants": "0@s.whatsapp.net",
+          "remoteJid": "status@broadcast",
+          "fromMe": false,
+          "id": "Halo"
+        },
+        "message": {
+          "contactMessage": {
+            "vcard": `BEGIN:VCARD\nVERSION:3.0\nN:Sy;Bot;;;\nFN:y\nitem1.TEL;waid=${m.sender.split('@')[0]}:${m.sender.split('@')[0]}\nitem1.X-ABLabel:Ponsel\nEND:VCARD`
+          }
+        },
+        "participant": "0@s.whatsapp.net"
+      }
+
+      conn.sendMessage(m.chat, { text: resultMessage }, { quoted: fkontak });
 
       user.lastmission = new Date * 1;
       clearTimeout(timeout);
       delete conn.mission[m.sender];
       return !0
+      
     } else if (/^tolak?$/i.test(txt)) {
       clearTimeout(timeout)
       delete conn.mission[m.sender]
-      m.reply('Canceled')
+      m.reply('❌ Misi Dibatalkan')
       return !0
     }
   } catch (e) {
+    console.error('Error in mission handler:', e)
     clearTimeout(timeout)
     delete conn.mission[m.sender]
-    m.reply('Error Saat Pengambilan Misi (Rejected)')
-    console.log(e.stack)
-    return !0
-  } finally {
-    clearTimeout(timeout)
-    delete conn.mission[m.sender]
+    m.reply('❌ Error Saat Pengambilan Misi')
     return !0
   }
 }
