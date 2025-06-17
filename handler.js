@@ -52,7 +52,18 @@ const seli = Tnow - m.messageTimestamp.low
 if (seli > Intervalmsg) return console.log((`Pesan ${Intervalmsg} detik yang lalu diabaikan agar tidak nyepam`))
 
 const { type,args, reply,sender,ucapanWaktu,from,botNumber,senderNumber,groupName,groupId,groupMembers,groupDesc,groupOwner,pushname,itsMe,isGroup,mentionByTag,mentionByReply,users,budy,content,body } = m
-const prem = db.data.users[sender].premiumTime !== 0 
+const chat = db.data.chats[m.chat] || {}
+
+// Auto disable VIP kalau expired
+if (chat.isVip && Date.now() > chat.vipExpired) {
+  chat.isVip = false
+  chat.adminVipAccess = false
+}
+
+// Deteksi status premium
+const isGroupAdminVip = m.isGroup && chat.isVip && chat.adminVipAccess && m.isAdmin
+const isPremiumUser = (db.data.users[sender].premiumTime || 0) > 0
+const isPremium = isOwner || isPremiumUser || isGroupAdminVip 
 
 
 if (multi){
@@ -67,7 +78,9 @@ const isCommand = isCmd? body.replace(prefix, '').trim().split(/ +/).shift().toL
 const q = args.join(' ')
 const time = moment().tz('Asia/Jakarta').format('HH:mm')
 const isOwner = ownerNumber.includes(sender) || _data.checkDataId ("owner", sender, DataId)
-const command = (prem || isOwner)? body.replace(prefix, '').trim().split(/ +/).shift().toLowerCase() : isCommand
+const command = (isPremium || isOwner)
+  ? body.replace(prefix, '').trim().split(/ +/).shift().toLowerCase()
+  : isCommand
 const theOwner = sender == Ownerin
 const quoted = m.quoted ? m.quoted : m.msg === undefined? m: m.msg
 const mime = (quoted.msg || quoted).mimetype || ''
