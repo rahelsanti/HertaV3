@@ -60,11 +60,13 @@ if (chat.isVip && Date.now() > chat.vipExpired) {
   chat.adminVipAccess = false
 }
 
-// Deteksi status premium
+// ⬇️ Pindahkan ini ke sini
+const isOwner = ownerNumber.includes(sender) || _data.checkDataId("owner", sender, DataId)
+
+// Baru pakai isOwner di bawah sini
 const isGroupAdminVip = m.isGroup && chat.isVip && chat.adminVipAccess && m.isAdmin
 const isPremiumUser = (db.data.users[sender].premiumTime || 0) > 0
-const isPremium = isOwner || isPremiumUser || isGroupAdminVip 
-
+const isPremium = isOwner || isPremiumUser || isGroupAdminVip
 
 if (multi){
 var prefix = /^[°zZ#,.''()√%!¢£¥€π¤ΠΦ&<`™©®Δ^βα¦|/\\©^]/.test(body) ? body.match(/^[°zZ#,.''()√%¢£¥€π¤ΠΦ&<!`™©®Δ^βα¦|/\\©^]/gi) : '.'
@@ -77,7 +79,6 @@ const isCmd = body.startsWith(prefix)
 const isCommand = isCmd? body.replace(prefix, '').trim().split(/ +/).shift().toLowerCase() :""
 const q = args.join(' ')
 const time = moment().tz('Asia/Jakarta').format('HH:mm')
-const isOwner = ownerNumber.includes(sender) || _data.checkDataId ("owner", sender, DataId)
 const command = (isPremium || isOwner)
   ? body.replace(prefix, '').trim().split(/ +/).shift().toLowerCase()
   : isCommand
