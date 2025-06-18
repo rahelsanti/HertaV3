@@ -7,10 +7,10 @@ const hargaSampah = {
 }
 
 const namaSampah = {
-  botol: '🧴 Botol',
+  botol: '🍾 Botol',
   kardus: '📦 Kardus',
   kaleng: '🥫 Kaleng',
-  plastik: '🧼 Plastik',
+  plastik: '📜 Plastik',
   trash: '🗑️ Trash'
 }
 
