@@ -100,11 +100,24 @@ const handler = async (m, { command, conn }) => {
           user.lastmine = currentTime
 
           await conn.sendMessage(m.chat, {
-            video: fs.readFileSync('./media/mineprocces.mp4'),
-            caption: `⛏️ *Mining dimulai!*\n⌛ Tunggu 5 menit...\n\n@${m.sender.split('@')[0]}`,
-            gifPlayback: true,
-            mentions: [m.sender]
-          }, { quoted: fkontak(conn, m) })
+  video: fs.readFileSync('./media/mineprocces.mp4'),
+  caption: `🔋 *ENERGY CORE STABILIZED*
+
+@${m.sender.split('@')[0]} menjalankan robot tambang dengan kekuatan penuh!
+
+📡 Komponen Aktif:
+${user.pickaxemine ? `⛏️ Pickaxe Lv.${user.pickaxemine}` : ''}
+${user.drillmine ? `🛠️ Drill Lv.${user.drillmine}` : ''}
+${user.robotmine ? `🤖 Robot Lv.${user.robotmine}` : ''}
+
+⛓️ Status Operasi:
+[■■□□□□□□□□□□□□] 20% 🔄
+⌛ Waktu tersisa: *5 menit*
+
+🪙 Proses ekstraksi *Bitcoin* telah dimulai... silakan duduk manis!`,
+  gifPlayback: true,
+  mentions: [m.sender]
+}, { quoted: fkontak(conn, m) })
 
           const coinEarned = calculateCoinEarned(user)
 
