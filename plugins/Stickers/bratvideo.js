@@ -1,55 +1,73 @@
-import fetch from 'node-fetch';
-import fs from 'fs';
-import { randomUUID } from 'crypto';
+import axios from 'axios';
 
-let handler = async (m, { conn, args, command }) => {
-    if (command === 'bratvideo') {
-        if (!args[0]) return m.reply('harap masukkan teks! Contoh: .bratvideo hai semuanya');
+const handler = async (m, { conn, args, usedPrefix, command }) => {
+    const q = m.quoted?.text || args.join(" ");
+    if (!q) return m.reply(`Gunakan format: ${usedPrefix}${command} <teks>`);
 
-        let text = args.join(' ');
-        let apiUrl = `https://api.siputzx.my.id/api/m/brat?text=${encodeURIComponent(text)}&isVideo=true&delay=700`;
+    const user = global.db.data.users[m.sender];
+    const isPremium = user?.premium;
+    const mediaUrl = `https://api.siputzx.my.id/api/m/brat?text=${encodeURIComponent(q)}&isAnimated=true&delay=650`;
 
+    if (!conn.bratVideoQueue) conn.bratVideoQueue = [];
+    if (!conn.bratVideoProcessing) conn.bratVideoProcessing = false;
+
+    const sendSticker = async (msg) => {
         try {
-            let response = await fetch(apiUrl);
-            if (!response.ok) return m.reply('❌ Gagal mengambil video dari API.');
-
-            let buffer = await response.buffer();
-            let randomId = randomUUID(); // Generate a random ID
-            let filePath = `./${randomId}.mp4`; // Save video with random ID
-            fs.writeFileSync(filePath, buffer);
-
-            await conn.sendMessage(m.chat, {
-                video: fs.readFileSync(filePath),
-                caption: `🎥 *Brat Video*\n\nTeks: ${text}\n\nKlik tombol di bawah untuk mengubah video ini menjadi stiker.`,
-                buttons: [
-                    { buttonId: `!stickerbrats ${randomId}`, buttonText: { displayText: '🖼️ Jadikan Sticker' }, type: 1 }
-                ],
-                headerType: 4
-            }, { quoted: m });
+            await conn.toSticker(msg.chat, mediaUrl, msg); // proses jadi sticker
+            await conn.sendMessage(msg.chat, { react: { text: '✅', key: msg.key } });
         } catch (err) {
-            console.error(err);
-            m.reply('❌ Terjadi kesalahan saat memproses permintaan.');
+            console.error('[❌] Gagal mengonversi brat video:', err);
+            await conn.sendMessage(msg.chat, { react: { text: '❌', key: msg.key } });
+            await msg.reply('Gagal mengonversi brat video ke stiker, coba lagi nanti ya Senpai >_<');
         }
-    } else if (command === 'stickerbrats') {
-        const randomId = args[0]; // Get the random ID from the command
-        if (!randomId) return m.reply('❌ ID video tidak ditemukan!');
+    };
 
-        let filePath = `./${randomId}.mp4`;
-        if (!fs.existsSync(filePath)) return m.reply('❌ Video tidak ditemukan atau sudah dihapus.');
+    if (isPremium) {
+        await conn.sendMessage(m.chat, { react: { text: '⏳', key: m.key } });
+        return await sendSticker(m);
+    }
 
-        try {
-            const buffer = fs.readFileSync(filePath);
-            await conn.toSticker(m.chat, buffer, m); // Convert video to sticker
-            fs.unlinkSync(filePath); // Clean up the video file after conversion
-        } catch (err) {
-            console.error(err);
-            m.reply('❌ Gagal mengubah video menjadi stiker.');
-        }
+    const alreadyInQueue = conn.bratVideoQueue.find(entry => entry.sender === m.sender);
+    if (alreadyInQueue) {
+        const pos = conn.bratVideoQueue.findIndex(entry => entry.sender === m.sender) + 1;
+        return m.reply(`(>///<) Kamu sudah ada di antrian ke *${pos}*, Senpai~\nTunggu giliranmu ya~`);
+    }
+
+    if (conn.bratVideoQueue.length >= 10) {
+        return m.reply(`(╥﹏╥) Antrian penuh, Senpai~\nMaksimal hanya *10 pengguna*. Coba lagi nanti.`);
+    }
+
+    conn.bratVideoQueue.push({ m, sender: m.sender });
+    const pos = conn.bratVideoQueue.length;
+    await m.reply(`(>///<) Kamu masuk antrian ke *${pos}*, Senpai~\nUpgrade ke *Premium* biar langsung diproses tanpa antri~ ketik *.buypremium* 💎`);
+
+    if (!conn.bratVideoProcessing) {
+        conn.bratVideoProcessing = true;
+        await processBratVideoQueue(conn, sendSticker);
     }
 };
 
-handler.help = ['bratvideo <teks>', 'sticker <id>'];
-handler.tags = ['fun'];
-handler.command = /^(bratvideo|stickerbrats)$/i;
+async function processBratVideoQueue(conn, sendSticker) {
+    while (conn.bratVideoQueue.length > 0) {
+        const { m } = conn.bratVideoQueue[0];
+        try {
+            await conn.sendMessage(m.chat, { react: { text: '⏳', key: m.key } });
+            await new Promise(res => setTimeout(res, 3000)); // delay antar pengguna
+            await sendSticker(m);
+        } catch (e) {
+            console.error('❌ Gagal proses antrian bratvideo:', e);
+            await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } });
+            await m.reply('Terjadi kesalahan saat memproses brat video kamu >_<');
+        }
+
+        conn.bratVideoQueue.shift();
+    }
+
+    conn.bratVideoProcessing = false;
+}
+
+handler.command = ['bratvideo'];
+handler.help = ['bratvideo <teks>'];
+handler.tags = ['sticker'];
 
 export default handler;
