@@ -6,6 +6,7 @@ let handler = async (m, { conn, args, command }) => {
   let users = global.db.data.users
 
   const validItems = ['chip', 'exp', 'limit', 'tbox', 'common', 'uncommon', 'mythic', 'money']
+
   const fkontak = {
     key: {
       fromMe: false,
@@ -26,7 +27,7 @@ let handler = async (m, { conn, args, command }) => {
     let limit = parseInt(limitStr)
 
     if (!item || isNaN(jumlah) || isNaN(limit))
-      return m.reply(`❌ Format salah!\nGunakan: *.callairdrop <item> <jumlah> <maks_klaim>*\n\n🧾 Contoh: *.callairdrop chip 10 5*\n\n📦 Item yang tersedia:\n\n${validItems.map(i => '• ' + i).join('\n')}`)
+      return m.reply(`❌ Format salah!\nGunakan: *.callairdrop <item> <jumlah> <maks_klaim>*\n\n🧾 Contoh: *.callairdrop chip 10 5*\n\n📦 Item yang tersedia:\n${validItems.map(i => '• ' + i).join('\n')}`)
 
     if (!validItems.includes(item))
       return m.reply(`❌ Item *${item}* tidak tersedia.\n\n✅ Item yang tersedia:\n${validItems.map(i => '• ' + i).join('\n')}`)
@@ -58,12 +59,13 @@ let handler = async (m, { conn, args, command }) => {
         from: m.sender
       }
 
-      // Set expired 5 menit
+      // Auto expire (5 menit)
       setTimeout(async () => {
         let drop = conn.airdrop[jid]
         if (!drop) return
         let list = drop.users
         let teks
+
         if (list.length) {
           teks = `📦 AirDrop *${drop.item.toUpperCase()}* telah expired!\n\n📋 *Daftar Pengklaim:*\n${list.map(u => `- @${u.split('@')[0]}`).join('\n')}`
         } else {
@@ -76,12 +78,13 @@ let handler = async (m, { conn, args, command }) => {
           quoted: fkontak
         })
 
+        // Hapus pesan dari grup
         await conn.sendMessage(jid, {
           delete: {
             remoteJid: jid,
             fromMe: true,
-            id: msg.key.id,
-            participant: msg.key.participant || undefined
+            id: drop.msg.key.id,
+            participant: drop.msg.key.participant || undefined
           }
         }).catch(() => { })
 
@@ -95,10 +98,8 @@ let handler = async (m, { conn, args, command }) => {
 
 handler.command = /^callairdrop$/i
 handler.owner = true
-
 export default handler
 
-// 🧾 CLAIM HANDLER (.claimairdrop)
 handler.before = async (m, { conn }) => {
   conn.airdrop = conn.airdrop || {}
   let users = global.db.data.users
@@ -124,6 +125,7 @@ handler.before = async (m, { conn }) => {
 
   m.reply(`🎉 Kamu berhasil klaim *${drop.amount} ${drop.item.toUpperCase()}*!`)
 }
+
 
 function delay(ms) {
   return new Promise(res => setTimeout(res, ms))
