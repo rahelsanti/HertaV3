@@ -2,6 +2,8 @@ import fs from 'fs'
 
 let handler = async (m, { conn, args, command }) => {
   conn.airdrop = conn.airdrop || {}
+  conn.airdropQueue = conn.airdropQueue || []
+
   let chats = global.db.data.chats
   let users = global.db.data.users
 
@@ -37,6 +39,8 @@ let handler = async (m, { conn, args, command }) => {
 
     m.reply(`🚀 Mengirim AirDrop *${jumlah} ${item.toUpperCase()}* ke ${grupRpg.length} grup (maks. ${limit} klaim)...`)
 
+    let allDrop = []
+
     for (let [jid] of grupRpg) {
       if (conn.airdrop[jid]) continue
 
@@ -59,26 +63,22 @@ let handler = async (m, { conn, args, command }) => {
         from: m.sender
       }
 
-      // Auto expire (5 menit)
-      setTimeout(async () => {
+      // simpan data ini untuk penarikan hasil akhir
+      allDrop.push(jid)
+
+      await delay(2000)
+    }
+
+    // waktu habis semua sekaligus
+    setTimeout(async () => {
+      let hasil = []
+      let semuaUser = []
+
+      for (let jid of allDrop) {
         let drop = conn.airdrop[jid]
-        if (!drop) return
-        let list = drop.users
-        let teks
+        if (!drop) continue
 
-        if (list.length) {
-          teks = `📦 AirDrop *${drop.item.toUpperCase()}* telah expired!\n\n📋 *Daftar Pengklaim:*\n${list.map(u => `- @${u.split('@')[0]}`).join('\n')}`
-        } else {
-          teks = `📦 AirDrop *${drop.item.toUpperCase()}* telah expired!\n\n📋 *Daftar Pengklaim:*\nTidak ada yang klaim.`
-        }
-
-        await conn.sendMessage(drop.from, {
-          text: teks,
-          mentions: list,
-          quoted: fkontak
-        })
-
-        // Hapus pesan dari grup
+        // hapus pesan di grup
         await conn.sendMessage(jid, {
           delete: {
             remoteJid: jid,
@@ -88,17 +88,40 @@ let handler = async (m, { conn, args, command }) => {
           }
         }).catch(() => { })
 
-        delete conn.airdrop[jid]
-      }, 5 * 60 * 1000)
+        // data pengguna
+        if (drop.users.length) {
+          hasil.push(...drop.users)
+        }
 
-      await delay(2000)
-    }
+        delete conn.airdrop[jid]
+      }
+
+      let uniqueUsers = [...new Set(hasil)]
+      let teks
+
+      if (uniqueUsers.length) {
+        teks = `📦 AirDrop *${item.toUpperCase()}* telah expired!\n\n📋 *Daftar Pengklaim:*\n${uniqueUsers.map(u => `- @${u.split('@')[0]}`).join('\n')}`
+      } else {
+        teks = `📦 AirDrop *${item.toUpperCase()}* telah expired!\n\n📋 *Daftar Pengklaim:*\nTidak ada yang klaim.`
+      }
+
+      await conn.sendMessage(m.sender, {
+        text: teks,
+        mentions: uniqueUsers,
+        quoted: fkontak
+      })
+
+    }, 5 * 60 * 1000)
   }
 }
 
 handler.command = /^callairdrop$/i
 handler.owner = true
 export default handler
+
+function delay(ms) {
+  return new Promise(res => setTimeout(res, ms))
+}
 
 handler.before = async (m, { conn }) => {
   conn.airdrop = conn.airdrop || {}
@@ -124,9 +147,4 @@ handler.before = async (m, { conn }) => {
   user[drop.item] = (user[drop.item] || 0) + drop.amount
 
   m.reply(`🎉 Kamu berhasil klaim *${drop.amount} ${drop.item.toUpperCase()}*!`)
-}
-
-
-function delay(ms) {
-  return new Promise(res => setTimeout(res, ms))
 }
