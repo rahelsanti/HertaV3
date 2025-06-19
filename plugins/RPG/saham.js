@@ -198,12 +198,12 @@ Selamat trading dan semoga profit! 💰`;
         footer: `Tutorial Trading || Herta Bot`,
         buttons: [
             {
-                buttonId: `${usedPrefix}market`,
+                buttonId: `!market`,
                 buttonText: { displayText: '📈 Lihat Market' },
                 type: 1
             },
             {
-                buttonId: `${usedPrefix}portofolio`,
+                buttonId: `!portofolio`,
                 buttonText: { displayText: '💼 Lihat Portofolio' },
                 type: 1
             }
