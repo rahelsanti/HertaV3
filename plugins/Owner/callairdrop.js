@@ -8,17 +8,39 @@ let handler = async (m, { conn, args, command }) => {
 
   const validItems = ['chip', 'money', 'limit']
 
+  // 💠 fkontak untuk efek centang biru
+  const fkontak = {
+    key: {
+      fromMe: false,
+      participant: "0@s.whatsapp.net",
+      remoteJid: "status@broadcast"
+    },
+    message: {
+      contactMessage: {
+        displayName: "Herta",
+        vcard: `BEGIN:VCARD
+VERSION:3.0
+N:Herta;;;
+FN:Herta
+ORG:Herta Project;
+TITLE:Powered by Herta - V3
+TEL;type=CELL;type=VOICE;waid=0:+0
+END:VCARD`
+      }
+    }
+  }
+
   if (command === 'callairdrop') {
     let [item, jumlahStr, limitStr] = args
     let jumlah = parseInt(jumlahStr)
     let limit = parseInt(limitStr)
 
     if (!item || isNaN(jumlah) || isNaN(limit)) {
-      return m.reply(`❌ Format salah!\nContoh: *.callairdrop chip 10 5*`)
+      return m.reply(`❌ Format salah!\n\n*Contoh:* *.callairdrop chip 10 5*\n📦 *Item Tersedia:* ${validItems.join(', ')}`)
     }
 
     if (!validItems.includes(item)) {
-      return m.reply(`❌ Item *${item}* tidak tersedia.`)
+      return m.reply(`❌ Item *${item}* tidak tersedia.\n📦 Item tersedia: ${validItems.join(', ')}`)
     }
 
     let grupRpg = Object.entries(chats).filter(([_, data]) => data.rpg)
@@ -35,10 +57,10 @@ let handler = async (m, { conn, args, command }) => {
       let msg = await conn.sendMessage(jid, {
         video: fs.readFileSync('./media/airdrop.mp4'),
         mimetype: 'video/mp4',
-        caption: teks,
         gifPlayback: true,
-        contextInfo: {} // tidak ada preview, bersih
-      })
+        caption: teks,
+        fileName: `🎁 AIRDROP ${item.toUpperCase()} 🎁`
+      }, { quoted: fkontak }) // ⬅️ fkontak dipakai di sini
 
       conn.airdrop[jid] = {
         id,
@@ -50,7 +72,6 @@ let handler = async (m, { conn, args, command }) => {
         from: m.sender
       }
 
-      // hapus otomatis setelah 5 menit
       setTimeout(() => {
         conn.sendMessage(jid, {
           delete: {
@@ -59,7 +80,7 @@ let handler = async (m, { conn, args, command }) => {
             id: msg.key.id,
             participant: msg.key.participant || undefined
           }
-        }).catch(() => {})
+        }).catch(() => { })
 
         delete conn.airdrop[jid]
       }, 5 * 60 * 1000)
@@ -71,10 +92,9 @@ let handler = async (m, { conn, args, command }) => {
 
 handler.command = /^callairdrop$/i
 handler.owner = true
-
 export default handler
 
-// DETEKSI claimairdrop
+// 💬 Handler .claimairdrop
 handler.before = async (m, { conn }) => {
   conn.airdrop = conn.airdrop || {}
   let users = global.db.data.users
@@ -86,7 +106,6 @@ handler.before = async (m, { conn }) => {
   if (!drop) return
   if (!drop.msg || m.quoted.id !== drop.msg.key.id) return
 
-  // ✅ CEK apakah user sudah klaim di grup lain
   for (let chatId in conn.airdrop) {
     let d = conn.airdrop[chatId]
     if (d.users.includes(m.sender)) {
