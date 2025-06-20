@@ -1,109 +1,65 @@
-import axios from "axios";
-import cheerio from "cheerio";
+import  axios from "axios"
+import cheerio from "cheerio"
 
-let handler = async (m, { text, conn, usedPrefix, command }) => {
-    if (!text) throw "Masukkan lirik atau judulnya";
-    m.reply("⏳ Sedang mencari lirik...");
+let handler = async (m, { conn, text, usedPrefix, command }) => {
+  if (!text) throw `*• Example:* ${usedPrefix + command} *[Name song]*`;
+  
+  try {
+    let lirik = await findSongs(text);
+    let caption = `*[ ${command === "lirik" ? command + " SEARCH" : command.toUpperCase().split("").join(" ")} ]*
+*• Title:* ${lirik.title}
+*• Album:* ${lirik.album}
 
-    try {
-        const res = await genius.getSongLyrics(text);
+\`\`\`${lirik.lyrics}\`\`\``;
+    conn.sendFile(m.chat, lirik.thumb, null, caption, m)
+  } catch (e) {
+    throw "Request Error";
+  }
+}
+handler.help = ["songfind", "lirik", "lyrics", "findsong"].map(a => a + " *[Name song]*");
+handler.tags = ["internet"];
+handler.command = ["songfind", "lirik", "lyrics", "findsong"];
 
-        if (res.error) throw res.error;
+export default handler 
 
-        const output = `
-*🎵 Title:* ${res.title}
-*🎤 Artist:* ${res.artist}
 
-*📜 Lyrics:*
+async function findSongs(text) {
+  try {
+    const { data } = await axios.get(
+      "https://songsear.ch/q/" + encodeURIComponent(text),
+    );
+    const $ = cheerio.load(data);
+    const result = {
+      title:
+        $("div.results > div:nth-child(1) > .head > h3 > b").text() +
+        " - " +
+        $("div.results > div:nth-child(1) > .head > h2 > a").text(),
+      album: $("div.results > div:nth-child(1) > .head > p").text(),
+      number: $("div.results > div:nth-child(1) > .head > a")
+        .attr("href")
+        .split("/")[4],
+      thumb: $("div.results > div:nth-child(1) > .head > a > img").attr("src"),
+    };
 
-${res.lyrics}
-`.trim();
+    const { data: lyricData } = await axios.get(
+      `https://songsear.ch/api/song/${result.number}?text_only=true`,
+    );
+    const lyrics = lyricData.song.text_html
+      .replace(/<br\/>/g, "\n")
+      .replace(/&#x27;/g, "'");
 
-        await conn.reply(m.chat, output, m);
-    } catch (e) {
-        m.reply(`⚠️ Error: ${e.message}`);
-    }
-};
-
-handler.help = handler.command = ["lirik", "lyric"];
-handler.tags = ["tools"];
-
-export default handler;
-
-const GENIUS_API_URL = "https://api.genius.com";
-const GENIUS_ACCESS_TOKEN = "L0BY-i4ZVi0wQ53vlvm2zucqjHTuLbHv--YgjxJoN0spnEIhb5swTr_mWlQ6Ye-F";
-
-const headers = {
-    Authorization: `Bearer ${GENIUS_ACCESS_TOKEN}`,
-    "User-Agent": "apitester.org Android/7.5(641)"
-};
-
-const logs = (message, code) => {
-    const error = new Error(message);
-    error.code = code;
-    return error;
-};
-
-const genius = {
-    async searchSong(query) {
-        const url = new URL("/search", GENIUS_API_URL);
-        url.searchParams.append("q", query);
-
-        try {
-            const response = await axios.get(url.toString(), { headers });
-            return response.data.response.hits;
-        } catch (error) {
-            if (error.response) {
-                throw logs(`❌ Error: ${error.response.status}`, error.response.status);
-            }
-            throw logs(`❌ Error: ${error.message}`, "NETWORK_ERROR");
-        }
-    },
-
-    async getLyrics(songUrl) {
-        try {
-            const response = await axios.get(songUrl);
-            const $ = cheerio.load(response.data);
-            let lyrics = "";
-
-            $('[class^="Lyrics__Container-"]').each((index, element) => {
-                $(element).find("br").replaceWith("\n");
-                lyrics += $(element)
-                    .text()
-                    .replace(/&nbsp;/g, " ")
-                    .trim() + "\n";
-            });
-
-            // Format and clean up lyrics
-            lyrics = lyrics
-                .replace(/\n{3,}/g, "\n\n") // Reduce multiple blank lines
-                .trim();
-
-            return lyrics;
-        } catch (error) {
-            throw logs("❌ Error saat mengambil lirik", "LYRICS_ERROR");
-        }
-    },
-
-    async getSongLyrics(query) {
-        try {
-            const searchResults = await this.searchSong(query);
-            if (searchResults.length === 0) {
-                throw "Lirik tidak ditemukan 🌝";
-            }
-
-            const song = searchResults[0].result;
-            const lyrics = await this.getLyrics(song.url);
-
-            return {
-                title: song.title,
-                artist: song.primary_artist.name,
-                lyrics: lyrics,
-                url: song.url,
-                thumbnailUrl: song.song_art_image_thumbnail_url
-            };
-        } catch (error) {
-            return { error: error.message };
-        }
-    }
-};
+    return {
+      status: true,
+      title: result.title,
+      album: result.album,
+      thumb: result.thumb,
+      lyrics: lyrics,
+    };
+  } catch (err) {
+    console.log(err);
+    return {
+      status: false,
+      error: "Unknown error occurred",
+    };
+  }
+}
