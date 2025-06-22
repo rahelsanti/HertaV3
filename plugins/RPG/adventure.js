@@ -1,7 +1,7 @@
 import fetch from "node-fetch";
 import moment from "moment-timezone";
 const cooldown = 300000;
-let handler = async (m, { coon, usedPrefix }) => {
+let handler = async (m, { conn, usedPrefix }) => {
   try {
     let ct = [
       "AF",
@@ -311,15 +311,40 @@ let handler = async (m, { coon, usedPrefix }) => {
             rewardItem
           )}${rewardItem}: ${total}`;
       }
-    await conn.adReply(
+
+    // Membuat fkontak broadcast
+    let fkontak = {
+      key: {
+        participant: `0@s.whatsapp.net`,
+        ...(m.chat ? { remoteJid: `status@broadcast` } : {}),
+      },
+      message: {
+        contactMessage: {
+          displayName: m.name || m.pushName || "Adventure Explorer",
+          vcard: `BEGIN:VCARD\nVERSION:3.0\nN:;${m.name || m.pushName || "Adventure Explorer"};;;\nFN:${m.name || m.pushName || "Adventure Explorer"}\nitem1.TEL;waid=${m.sender.split('@')[0]}:${m.sender.split('@')[0]}\nitem1.X-ABLabel:Ponsel\nEND:VCARD`,
+        },
+      },
+    };
+
+    // Mengirim pesan dengan thumbnail dan quoted message
+    await conn.sendMessage(
       m.chat,
-      text,
-      "",
-      "",
-      `https://static-maps.yandex.ru/1.x/?lang=id-ID&ll=${kt[1][0].longitude},${kt[1][0].latitude}&z=12&l=map&size=600,300`,
-      "",
-      m
+      {
+        text: text,
+        contextInfo: {
+          externalAdReply: {
+            title: `🗺️ Adventure to ${kt[1][0].name}`,
+            body: `Exploring ${kt[1][0].capitalCity}`,
+            thumbnailUrl: `https://static-maps.yandex.ru/1.x/?lang=id-ID&ll=${kt[1][0].longitude},${kt[1][0].latitude}&z=12&l=map&size=600,300`,
+            sourceUrl: null,
+            mediaType: 1,
+            renderLargerThumbnail: true
+          }
+        }
+      },
+      { quoted: fkontak }
     );
+
     user.lastadventure = new Date() * 1;
   } catch (err) {
     m.reply('❗ᴛᴇʀᴊᴀᴅɪ ᴇʀʀᴏʀ ꜱɪʟᴀᴋᴀɴ ᴜʟᴀɴɢɪ ʟᴀɢɪ')
