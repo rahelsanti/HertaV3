@@ -395,7 +395,6 @@ ${cooldowns}`
   await conn.reply(m.chat, caption, m, {
     contextInfo: {
       externalAdReply: {
-        showAdAttribution: true,
         mediaType: 1,
         title: "ɪɴᴠᴇɴᴛᴏʀʏ | ° ᶜˡⁱᶜᵏ ᵗᵒ ʲᵒⁱⁿ ᵍʳᵒᵘᵖ ᶜʰᵃᵗ °",
         thumbnailUrl: "https://telegra.ph/file/a2d065634f4a7fb8c1752.jpg",
