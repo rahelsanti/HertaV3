@@ -43,7 +43,6 @@ let handler = async (m, { conn }) => {
                 sourceUrl: '',
                 mediaType: 1,
                 renderLargerThumbnail: true,
-                showAdAttribution: true
             }
         }
     }, {
