@@ -29,11 +29,25 @@ let handler = async (m, { conn }) => {
 └────···
 `.trim();
 
+    // Baca gambar lokal
+    const thumbnail = fs.readFileSync('./media/bank.jpg');
+
+    // Kirim pesan teks dengan thumbnail di contextInfo
     await conn.sendMessage(m.chat, {
-        image: fs.readFileSync('./media/bank.jpg'), // Gambar tetap dari folder
-        caption,
+        text: caption,
+        contextInfo: {
+            externalAdReply: {
+                title: "BANK INFO 🏦",
+                body: ``,
+                thumbnail, // buffer gambar langsung
+                sourceUrl: '',
+                mediaType: 1,
+                renderLargerThumbnail: true,
+                showAdAttribution: true
+            }
+        }
     }, {
-        quoted: fkontak(name, nomor) // fkontak pakai nama & nomor user
+        quoted: fkontak(name, nomor)
     });
 };
 
@@ -47,7 +61,7 @@ handler.rpg = true;
 
 export default handler;
 
-// Fungsi kontak broadcast dari user
+// Fungsi quoted kontak
 function fkontak(name, nomor) {
     const vcard = `
 BEGIN:VCARD
@@ -61,7 +75,7 @@ END:VCARD`.trim();
         key: {
             fromMe: false,
             participant: '0@s.whatsapp.net',
-            remoteJid: 'status@broadcast' // Supaya tampil seperti pesan sistem
+            remoteJid: 'status@broadcast'
         },
         message: {
             contactMessage: {
