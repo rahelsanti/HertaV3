@@ -51,7 +51,7 @@ export async function handler(m, { conn, command, text, usedPrefix }) {
 
         await conn.sendMessage(m.chat, {
             document: buffer,
-            fileName: `Academy RPG.pdf`,
+            fileName: `Powered By Sanz Verse`,
             mimetype: 'application/pdf',
             caption: message.trim(),
             contextInfo: {
