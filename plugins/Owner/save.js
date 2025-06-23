@@ -1,91 +1,36 @@
-import { generateWAMessageFromContent } from "baileys";
-import fs from 'fs-extra'
-let handler = async (m, { conn }) => {
 
-  const contextInfo = {
-    forwardingScore: 1,
-    isForwarded: true,
-    containsAutoReply: true,
-    mentionedJid: [m.sender],
-    forwardedNewsletterMessageInfo: {
-    newsletterJid,
-    serverMessageId: 100,
-    newsletterName,
-    },
-    businessMessageForwardInfo: {
-    businessOwnerJid: m.botNumber,
-    },
-    externalAdReply: {
-    title: `${transformText('Bot WhatsApp Multi Device')}
-    ${transformText(baileysVersion)}`,
-    body:`Runtime ${transformText(runTime)} `,
-    mediaType: 1,
-    renderLargerThumbnail: true,
-    //thumbnailUrl: links.getRandom(),
-    //jpegThumbnail: fs.readFileSync('./media/thumb2.jpg'),
-    thumbnail: fs.readFileSync('./media/thumb.jpg'),
-    sourceUrl: 'https://whatsapp.com/channel/0029VaROGogGufIzmrgEdo3W', //global.myUrl,
-    mediaUrl: global.myUrl,
-    },
-    };
+import fs from "fs-extra";
+let handler = async (m, { q, conn, isOwner, setReply, command }) => {
+  const quoted = m.quoted ? m.quoted : m.msg === undefined ? m : m.msg;
+  const isAllMedia =
+    m.type === "imageMessage" ||
+    m.type === "videoMessage" ||
+    m.type === "stickerMessage" ||
+    m.type === "audioMessage";
+  const isQuotedText =
+    m.type === "extendedTextMessage" &&
+    (m.content.includes("conversation") ||
+      m.content.includes("extendedTextMessage"));
+  if (!isOwner) return setReply(mess.only.owner);
+  if (!q)
+    return setReply(
+      `where is the path?\n\nexample:\n${prefix + command} plugins/menu.js`
+    );
 
+  if (isAllMedia && !isQuotedText) {
+    if (!q) return setReply("Jangan lupa isi query, Contoh ./media/lala.jpg");
+    let delb = await conn.downloadAndSaveMediaMessage(quoted, makeid(5));
+    await fs.copy(delb, q);
+    fs.unlinkSync(delb);
+    setReply(`File telah tersimpan`);
+  } else if (isQuotedText) {
+    let path = `${q}`;
+    await require("fs").writeFileSync(path, m.quoted.text);
+    setReply(`Saved ${path} to file!`);
+  } else setReply(`reply code/photo/video/audio`);
+};
 
-
-
-
-
-
-
-
-
-let msg = generateWAMessageFromContent(m.chat, {
-  contextInfo,
-  viewOnceMessage: {
-    message: {
-      messageContextInfo: {
-        deviceListMetadata: {},
-        deviceListMetadataVersion: 2
-      },
-      interactiveMessage: {
-        jpegThumbnail: fs.readFileSync('./media/thumb.jpg'),
-        thumbnail: fs.readFileSync('./media/thumb.jpg'),
-        body: {
-          text: "test"
-        },
-        footer: {
-          text: "test"
-        },
-        header: {
-          title: "test",
-          subtitle: "test",
-          hasMediaAttachment: true,
-          imageMessage: fs.readFileSync('./media/thumb.jpg'),
-          jpegThumbnail: fs.readFileSync('./media/thumb.jpg'),
-          thumbnail: fs.readFileSync('./media/thumb.jpg'),
-        },
-        nativeFlowMessage: {
-          buttons: [
-            {
-              name: "single_select",
-              buttonParamsJson: "{\"title\":\"title\",\"sections\":[{\"title\":\"title\",\"highlight_label\":\"label\",\"rows\":[{\"header\":\"header\",\"title\":\"menu nya\",\"description\":\"description\",\"id\":\"menu\"},{\"header\":\"header\",\"title\":\"speed\",\"description\":\"description\",\"id\":\"speed\"}]}]}"
-            },
-            {
-              name: "quick_reply",
-              buttonParamsJson: "{\"display_text\":\"dashboard\",\"id\":\"dashboard\"}"
-            }
-          ]
-        }
-      }
-    }
-  }
-}, {});
-
-await conn.relayMessage(msg.key.remoteJid, msg.message, {
-  messageId: msg.key.id
-});
-
-
-}
-
-handler.command =['tes']
+handler.tags = ["owner"];
+handler.command = ["save",'savefile','sf'];
+handler.owner = true;
 export default handler;
