@@ -55,9 +55,25 @@ const success = (id, text) => {
   spins.succeed(id, { text: text });
 };
 
-// Flag untuk mencegah save berulang saat reconnect
+// Flag dan tracking untuk mencegah save berulang saat reconnect
 let hasInitialConnection = false;
+let lastSessionId = null;
+let botConnectedSent = false;
 
+// Function untuk mendapatkan session ID dari creds.json
+function getCurrentSessionId() {
+  try {
+    const sessionFilePath = './session/creds.json';
+    if (fs.existsSync(sessionFilePath)) {
+      const creds = JSON.parse(fs.readFileSync(sessionFilePath, 'utf8'));
+      // Gunakan kombinasi registrationId dan identityId sebagai unique identifier
+      return `${creds.registrationId || 'unknown'}_${creds.identityId || 'unknown'}`;
+    }
+  } catch (error) {
+    console.error("Error reading session ID:", error.message);
+  }
+  return null;
+}
 // Function untuk save session ke GitHub
 async function saveSessionToGitHub() {
   if (!global.heroku) {
@@ -190,8 +206,10 @@ export const connectionUpdate = async (connectToWhatsApp, conn, update) => {
     } else if (reason === DisconnectReason.loggedOut) {
       console.log(chalk.red(`Device Logged Out, Please Scan Again And Run.`));
       conn.logout();
-      // Reset flag ketika logout
+      // Reset semua flag ketika logout (session berubah)
       hasInitialConnection = false;
+      lastSessionId = null;
+      botConnectedSent = false;
     } else if (reason === DisconnectReason.restartRequired) {
       console.log("Restart Required, Restarting...");
       connectToWhatsApp();
@@ -218,33 +236,44 @@ export const connectionUpdate = async (connectToWhatsApp, conn, update) => {
     // Clear session saat koneksi terbuka
     await clearSession();
 
-    // Cek apakah ini koneksi pertama atau setelah pairing/scan barcode
-    const shouldSaveToGitHub = !hasInitialConnection || isNewLogin;
+    // Dapatkan session ID saat ini
+    const currentSessionId = getCurrentSessionId();
+    
+    // Cek apakah ini session yang benar-benar baru
+    const isNewSession = !lastSessionId || lastSessionId !== currentSessionId;
+    const shouldSaveToGitHub = !hasInitialConnection || isNewLogin || isNewSession;
     
     if (shouldSaveToGitHub) {
-      console.log(chalk.blue("Initial connection or new login detected"));
+      console.log(chalk.blue("New session detected or initial connection"));
       hasInitialConnection = true;
+      lastSessionId = currentSessionId;
+      botConnectedSent = false; // Reset flag kirim pesan
       
       // Save ke GitHub setelah delay 5 detik
       setTimeout(async () => {
         await saveSessionToGitHub();
       }, 5000);
     } else {
-      console.log(chalk.yellow("Reconnection detected, skipping GitHub save"));
+      console.log(chalk.yellow("Same session reconnection detected, skipping GitHub save"));
     }
 
-    // Kirim pesan Bot Connected ke owner setelah delay 10 detik
-    setTimeout(async () => {
-      try {
-        if (global.nomerOwner) {
-          const ownerJid = `${global.nomerOwner}@s.whatsapp.net`;
-          await conn.sendMessage(ownerJid, { text: "*Bot Connected*" });
-          console.log(chalk.green("Bot connected message sent to owner."));
+    // Kirim pesan Bot Connected ke owner hanya jika belum dikirim untuk session ini
+    if (!botConnectedSent && (shouldSaveToGitHub || isNewSession)) {
+      setTimeout(async () => {
+        try {
+          if (global.nomerOwner) {
+            const ownerJid = `${global.nomerOwner}@s.whatsapp.net`;
+            await conn.sendMessage(ownerJid, { text: "*Bot Connected*" });
+            console.log(chalk.green("Bot connected message sent to owner."));
+            botConnectedSent = true; // Set flag sudah dikirim
+          }
+        } catch (err) {
+          console.error("Failed to send bot connected message:", err);
         }
-      } catch (err) {
-        console.error("Failed to send bot connected message:", err);
-      }
-    }, 10000);
+      }, 10000);
+    } else {
+      console.log(chalk.yellow("Bot connected message already sent for this session"));
+    }
 
     const bot = db.data.others["restart"];
     if (bot) {
