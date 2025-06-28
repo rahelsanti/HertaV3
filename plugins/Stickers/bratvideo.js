@@ -53,7 +53,7 @@ const handler = async (m, { conn, args, usedPrefix, command }) => {
     });
     
     const pos = conn.bratVideoQueue.length;
-    await m.reply(`[⏳] ᴋᴀᴍᴜ ʙᴇʀᴀᴅᴀ ᴅɪ ᴀɴᴛʀɪᴀɴ ᴋᴇ *#${pos}* sɪʟᴀʜᴋᴀɴ ᴛᴜɴɢɢᴜ ʜɪɴɢɢᴀ ᴘʀᴏsᴇs ᴋᴀᴍᴜ, ᴜᴘɢʀᴀᴅᴇ ᴋᴇ ᴘʀᴇᴍɪᴜᴍ ᴅᴇɴɢᴀɴ ᴄᴀʀᴀ ᴋᴇᴛɪᴋ .sᴇᴡᴀ sᴜᴘᴀʏᴀ ᴛɪᴅᴀᴋ ᴍᴇɴᴜɴɢɢᴜ ᴛᴇʀʟᴀʟᴜ ʟᴀᴍᴀ 💎`);
+    await m.reply(`[⏳] ᴋᴀᴍᴜ ʙᴇʀᴀᴅᴀ ᴅɪ ᴀɴᴛʀɪᴀɴ ᴋᴇ *#${pos}* sɪʟᴀʜᴋᴀɴ ᴛᴜɴɢɢᴜ ʜɪɴɢɢᴀ ᴘʀᴏsᴇs ᴋᴀᴍᴜ, ᴜᴘɢʀᴀᴅᴇ ᴋᴇ ᴘʀᴇᴍɪᴜᴍ ᴅᴇɴɢᴀɴ ᴄᴀʀᴀ ᴋᴇᴛɪᴋ .sᴇᴡᴀ sᴜᴘᴀʏᴀ ᴛɪᴅᴀᴋ ᴍᴇɴᴜɴɢɢᴜ ᴛᴇʀʟᴀʟᴜ ʟᴀᴍᴀ`);
 
     // Mulai proses antrian jika belum berjalan
     if (!conn.bratVideoProcessing) {
@@ -101,7 +101,7 @@ async function processBratVideoQueue(conn, sendSticker) {
     conn.bratVideoProcessing = false;
 }
 
-handler.command = ['bratvideo'];
+handler.command = ['bratvideo', 'bratvid'];
 handler.help = ['bratvideo <teks>'];
 handler.tags = ['sticker'];
 
