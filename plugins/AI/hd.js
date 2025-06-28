@@ -1,6 +1,3 @@
-
-
-
 import FormData from "form-data";
 import jimp from 'jimp'
 
@@ -48,38 +45,126 @@ async function processing(urlPath, method) {
     );
   });
 }
+
 let handler = async (m, { conn, usedPrefix, command }) => {
   switch (command) {
     case "hdr":
-        case "hd":
+    case "hd":
       {
-        conn.hdr = conn.hdr ? conn.hdr : {};
-        if (m.sender in conn.hdr)
-          return m.reply("Masih Ada Proses Yang Belum Selesai Kak, Silahkan Tunggu Sampai Selesai Yah >//<")
+        const user = global.db.data.users[m.sender];
+        const isPremium = user?.premium;
+
+        // Inisialisasi queue jika belum ada
+        if (!conn.hdrQueue) conn.hdrQueue = [];
+        if (!conn.hdrProcessing) conn.hdrProcessing = false;
+
         let q = m.quoted ? m.quoted : m;
         let mime = (q.msg || q).mimetype || q.mediaType || "";
-        if (!mime) return m.reply(`Fotonya Mana Kak?`)
+        if (!mime) return m.reply(`[❗] ғᴏᴛᴏɴʏᴀ ᴍᴀɴᴀ ᴋᴀᴋ?`);
         if (!/image\/(jpe?g|png)/.test(mime))
-          return m.reply(`Mime ${mime} tidak support`)
-        else conn.hdr[m.sender] = true;
-        m.reply("Proses Kak...");
-        let img = await q.download();
-        let error;
-        try {
-          const This = await processing(img, "enhance");
-          conn.sendFile(m.chat, This, "", "Sudah Jadi Kak >//<", m);
-        } catch (er) {
-          error = true;
-        } finally {
-          if (error) {
-            m.reply("Proses Gagal :(");
+          return m.reply(`[❌] ᴍɪᴍᴇ ${mime} ᴛɪᴅᴀᴋ sᴜᴘᴘᴏʀᴛ`);
+
+        const processHD = async (messageObj, imageBuffer) => {
+          try {
+            const result = await processing(imageBuffer, "enhance");
+            await conn.sendFile(messageObj.chat, result, "", "[✅] sᴜᴅᴀʜ ᴊᴀᴅɪ ᴋᴀᴋ", messageObj);
+            await conn.sendMessage(messageObj.chat, { react: { text: '✅', key: messageObj.key } });
+          } catch (error) {
+            console.error('[❌] Gagal proses HD:', error);
+            await conn.sendMessage(messageObj.chat, { react: { text: '❌', key: messageObj.key } });
+            await conn.sendMessage(messageObj.chat, { 
+              text: '[❌] ᴘʀᴏsᴇs ɢᴀɢᴀʟ, ᴄᴏʙᴀ ʟᴀɢɪ ɴᴀɴᴛɪ ʏᴀ ᴋᴀᴋ' 
+            }, { quoted: messageObj });
           }
-          delete conn.hdr[m.sender];
+        };
+
+        // Jika premium, langsung proses
+        if (isPremium) {
+          await conn.sendMessage(m.chat, { react: { text: '⏳', key: m.key } });
+          await m.reply("[⏳] ᴘʀᴏsᴇs ᴋᴀᴋ...");
+          let img = await q.download();
+          return await processHD(m, img);
+        }
+
+        // Cek apakah user sudah ada di antrian
+        const alreadyInQueue = conn.hdrQueue.find(entry => entry.sender === m.sender);
+        if (alreadyInQueue) {
+          const pos = conn.hdrQueue.findIndex(entry => entry.sender === m.sender) + 1;
+          return m.reply(`[⏳] ᴋᴀᴍᴜ sᴜᴅᴀʜ ᴀᴅᴀ ᴅɪ ᴀɴᴛʀɪᴀɴ ᴋᴇ *${pos}*, sɪʟᴀʜᴋᴀɴ ᴛᴜɴɢɢᴜ ʜɪɴɢɢᴀ ᴘʀᴏsᴇs ᴋᴀᴍᴜ`);
+        }
+
+        // Cek batas maksimal antrian
+        if (conn.hdrQueue.length >= 10) {
+          return m.reply(`[❌] ᴀɴᴛʀɪᴀɴ ᴘᴇɴᴜʜ ᴋᴀᴋ, ᴍᴀᴋsɪᴍᴀʟ ʜᴀɴʏᴀ *10 ᴘᴇɴɢɢᴜɴᴀ*. ᴄᴏʙᴀ ʟᴀɢɪ ɴᴀɴᴛɪ`);
+        }
+
+        // Download gambar sebelum masuk antrian
+        let img = await q.download();
+
+        // Tambahkan ke antrian
+        conn.hdrQueue.push({ 
+          m: m, 
+          sender: m.sender, 
+          imageBuffer: img,
+          chat: m.chat,
+          key: m.key
+        });
+        
+        const pos = conn.hdrQueue.length;
+        await m.reply(`[⏳] ᴋᴀᴍᴜ ʙᴇʀᴀᴅᴀ ᴅɪ ᴀɴᴛʀɪᴀɴ ᴋᴇ *#${pos}* sɪʟᴀʜᴋᴀɴ ᴛᴜɴɢɢᴜ ʜɪɴɢɢᴀ ᴘʀᴏsᴇs ᴋᴀᴍᴜ, ᴜᴘɢʀᴀᴅᴇ ᴋᴇ ᴘʀᴇᴍɪᴜᴍ ᴅᴇɴɢᴀɴ ᴄᴀʀᴀ ᴋᴇᴛɪᴋ .sᴇᴡᴀ sᴜᴘᴀʏᴀ ᴛɪᴅᴀᴋ ᴍᴇɴᴜɴɢɢᴜ ᴛᴇʀʟᴀʟᴜ ʟᴀᴍᴀ`);
+
+        // Mulai proses antrian jika belum berjalan
+        if (!conn.hdrProcessing) {
+          conn.hdrProcessing = true;
+          processHDQueue(conn, processHD);
         }
       }
       break;
   }
 };
+
+async function processHDQueue(conn, processHD) {
+  while (conn.hdrQueue.length > 0) {
+    const queueItem = conn.hdrQueue[0];
+    const { m, imageBuffer, chat, key, sender } = queueItem;
+    
+    try {
+      await conn.sendMessage(chat, { react: { text: '⏳', key: key } });
+      await conn.sendMessage(chat, { 
+        text: '[⏳] ᴘʀᴏsᴇs ᴋᴀᴋ...' 
+      }, { quoted: m });
+      
+      // Buat object message yang benar untuk proses
+      const messageObj = {
+        chat: chat,
+        key: key,
+        reply: async (text) => {
+          await conn.sendMessage(chat, { text }, { quoted: m });
+        }
+      };
+      
+      // Proses gambar dengan buffer yang tepat
+      await processHD(messageObj, imageBuffer);
+      
+      // Delay sebelum proses berikutnya
+      await new Promise(res => setTimeout(res, 2000));
+      
+    } catch (e) {
+      console.error('❌ Gagal proses antrian HD:', e);
+      await conn.sendMessage(chat, { react: { text: '❌', key: key } });
+      await conn.sendMessage(chat, { 
+        text: '[❌] ᴛᴇʀᴊᴀᴅɪ ᴋᴇsᴀʟᴀʜᴀɴ sᴀᴀᴛ ᴍᴇᴍᴘʀᴏsᴇs ɢᴀᴍʙᴀʀ ᴋᴀᴍᴜ' 
+      }, { quoted: m });
+    }
+
+    // Hapus item pertama dari antrian
+    conn.hdrQueue.shift();
+  }
+
+  // Set processing ke false setelah semua antrian selesai
+  conn.hdrProcessing = false;
+}
+
 handler.help = ["remini2", "color", "hdr"];
 handler.tags = ["ai"];
 handler.command = ["hd", "hdr"];
