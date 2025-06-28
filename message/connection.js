@@ -11,6 +11,8 @@ import spin from "spinnies";
 import { spawn } from "child_process";
 import { sleep } from "../lib/myfunc.js";
 import fs from "fs-extra";
+import { Octokit } from '@octokit/rest';
+import { Buffer } from 'buffer';
 
 const spinner = {
   interval: 120,
@@ -52,6 +54,76 @@ const start = (id, text) => {
 const success = (id, text) => {
   spins.succeed(id, { text: text });
 };
+
+// Flag untuk mencegah save berulang saat reconnect
+let hasInitialConnection = false;
+
+// Function untuk save session ke GitHub
+async function saveSessionToGitHub() {
+  if (!global.heroku) {
+    console.log(chalk.yellow("GitHub save disabled (global.heroku = false)"));
+    return;
+  }
+
+  if (!global.token || !global.username || !global.repo) {
+    console.log(chalk.red("GitHub credentials not configured"));
+    return;
+  }
+
+  try {
+    const sessionFilePath = './session/creds.json';
+    if (!fs.existsSync(sessionFilePath)) {
+      console.log(chalk.red("Session file not found for GitHub upload"));
+      return;
+    }
+
+    console.log(chalk.blue("Saving session to GitHub..."));
+    
+    const contentBuffer = fs.readFileSync(sessionFilePath);
+    const octokit = new Octokit({ auth: global.token });
+    const filePath = 'session/creds.json';
+
+    // Cek apakah file sudah ada di GitHub
+    let sha = null;
+    try {
+      const { data } = await octokit.repos.getContent({
+        owner: global.username,
+        repo: global.repo,
+        path: filePath,
+      });
+      sha = data?.sha || null;
+    } catch (err) {
+      // File belum ada, biarkan sha null
+      if (err.status !== 404) {
+        console.error(chalk.red("Error checking existing file:"), err.message);
+        return;
+      }
+    }
+
+    // Upload/update file ke GitHub
+    await octokit.repos.createOrUpdateFileContents({
+      owner: global.username,
+      repo: global.repo,
+      path: filePath,
+      message: `Update session/creds.json via bot`,
+      content: contentBuffer.toString('base64'),
+      sha: sha || undefined,
+      committer: {
+        name: 'WhatsApp Bot',
+        email: 'bot@whatsapp.dev'
+      },
+      author: {
+        name: 'WhatsApp Bot',
+        email: 'bot@whatsapp.dev'
+      }
+    });
+
+    console.log(chalk.green("✅ Session successfully saved to GitHub!"));
+    
+  } catch (error) {
+    console.error(chalk.red("❌ Failed to save session to GitHub:"), error.message);
+  }
+}
 
 async function clearSession() {
   try {
@@ -118,6 +190,8 @@ export const connectionUpdate = async (connectToWhatsApp, conn, update) => {
     } else if (reason === DisconnectReason.loggedOut) {
       console.log(chalk.red(`Device Logged Out, Please Scan Again And Run.`));
       conn.logout();
+      // Reset flag ketika logout
+      hasInitialConnection = false;
     } else if (reason === DisconnectReason.restartRequired) {
       console.log("Restart Required, Restarting...");
       connectToWhatsApp();
@@ -144,27 +218,31 @@ export const connectionUpdate = async (connectToWhatsApp, conn, update) => {
     // Clear session saat koneksi terbuka
     await clearSession();
 
-    // Kirim session/creds.json ke global.nomerOwner setelah delay 10 detik
+    // Cek apakah ini koneksi pertama atau setelah pairing/scan barcode
+    const shouldSaveToGitHub = !hasInitialConnection || isNewLogin;
+    
+    if (shouldSaveToGitHub) {
+      console.log(chalk.blue("Initial connection or new login detected"));
+      hasInitialConnection = true;
+      
+      // Save ke GitHub setelah delay 5 detik
+      setTimeout(async () => {
+        await saveSessionToGitHub();
+      }, 5000);
+    } else {
+      console.log(chalk.yellow("Reconnection detected, skipping GitHub save"));
+    }
+
+    // Kirim pesan Bot Connected ke owner setelah delay 10 detik
     setTimeout(async () => {
       try {
-        const sessionFilePath = './session/creds.json';
-        if (fs.existsSync(sessionFilePath)) {
-          const fileBuffer = fs.readFileSync(sessionFilePath);
-
-          // Ensure global.nomerOwner is formatted as a JID
+        if (global.nomerOwner) {
           const ownerJid = `${global.nomerOwner}@s.whatsapp.net`;
-
-          await conn.sendMessage(ownerJid, { 
-            document: fileBuffer, 
-            mimetype: 'application/json', 
-            fileName: 'creds.json' 
-          });
-          console.log(chalk.green("Session file sent to owner."));
-        } else {
-          console.log(chalk.red("Session file not found."));
+          await conn.sendMessage(ownerJid, { text: "*Bot Connected*" });
+          console.log(chalk.green("Bot connected message sent to owner."));
         }
       } catch (err) {
-        console.error("Failed to send session file:", err);
+        console.error("Failed to send bot connected message:", err);
       }
     }, 10000);
 
