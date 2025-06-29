@@ -326,6 +326,5 @@ Reply audio + ${usedPrefix}${command} kobo 12`;
 handler.command = ['voicechanger', 'vc'];
 handler.help = ['voicechanger [model] [transpose]'];
 handler.tags = ['audio'];
-handler.owner = true
 
 export default handler;
