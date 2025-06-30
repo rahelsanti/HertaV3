@@ -36,7 +36,7 @@ let handler = async (m, { conn, usedPrefix, command }) => {
     data: payload,
     headers: {
       "accept": "application/json",
-      "X-API-Key": "QteAJBpdL4oeNXebAde2WqCb",
+      "X-API-Key": "q5nmz8R3ghVy2AzJpcZBKLUs",
       "Content-Type": "application/json"
     }
   })
