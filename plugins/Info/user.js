@@ -8,10 +8,10 @@ let handler = async (m, { conn }) => {
   const poll = await generateWAMessageFromContent(m.chat, {
     pollResultSnapshotMessage: {
       pollVotes: [
-        { optionName: 'Terdaftar', optionVoteCount: rtotalreg.toString() },
-        { optionName: 'Tidak Terdaftar', optionVoteCount: unregistered.toString() }
+        { optionName: 'Terdaftar 📥', optionVoteCount: rtotalreg.toString() },
+        { optionName: 'Tidak Terdaftar 📤', optionVoteCount: unregistered.toString() }
       ],
-      name: `Database ${global.nameBot}`,
+      name: `Total User di Database 🗃️`,
     }
   }, { quoted: m, ...global.ephemeral });
 
