@@ -366,6 +366,22 @@ handler.before = async (m) => {
 
       let playerTotal = calculateTotal(hand.cards);
       
+      if (playerTotal === 21 && hand.status === 'stand') {
+  if (dealerTotal > 21) {
+    totalWin += hand.bet * 2;
+    results.push(`${handLabel}: WIN 21 (+${hand.bet} ${bjData.type})`);
+  } else if (playerTotal > dealerTotal) {
+    totalWin += hand.bet * 2;
+    results.push(`${handLabel}: WIN 21 (+${hand.bet} ${bjData.type})`);
+  } else if (playerTotal < dealerTotal) {
+    results.push(`${handLabel}: LOSE (-${hand.bet} ${bjData.type})`);
+  } else {
+    totalWin += hand.bet;
+    results.push(`${handLabel}: PUSH 21 (${hand.bet} ${bjData.type} returned)`);
+  }
+  continue;
+}
+      
       if (dealerTotal > 21) {
         totalWin += hand.bet * 2;
         results.push(`${handLabel}: WIN (+${hand.bet} ${bjData.type})`);
@@ -588,10 +604,14 @@ handler.before = async (m) => {
       bjData.canDouble = false;
 
       if (total > 21) {
-        hand.status = 'bust';
-      } else if (total === 21) {
-        hand.status = 'stand';
-      }
+  hand.status = 'bust';
+} else if (total === 21) {
+  if (hand.cards.length === 2) {
+    hand.status = 'blackjack';
+  } else {
+    hand.status = 'stand';
+  }
+}
 
       // Check if this was the last active hand
       if (bjData.playerHands.length > 1) {
