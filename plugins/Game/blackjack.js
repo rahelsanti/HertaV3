@@ -366,21 +366,20 @@ handler.before = async (m) => {
 
       let playerTotal = calculateTotal(hand.cards);
       
+      // FIXED: Handle 21 points properly
       if (playerTotal === 21 && hand.status === 'stand') {
-  if (dealerTotal > 21) {
-    totalWin += hand.bet * 2;
-    results.push(`${handLabel}: WIN 21 (+${hand.bet} ${bjData.type})`);
-  } else if (playerTotal > dealerTotal) {
-    totalWin += hand.bet * 2;
-    results.push(`${handLabel}: WIN 21 (+${hand.bet} ${bjData.type})`);
-  } else if (playerTotal < dealerTotal) {
-    results.push(`${handLabel}: LOSE (-${hand.bet} ${bjData.type})`);
-  } else {
-    totalWin += hand.bet;
-    results.push(`${handLabel}: PUSH 21 (${hand.bet} ${bjData.type} returned)`);
-  }
-  continue;
-}
+        if (dealerTotal > 21) {
+          totalWin += hand.bet * 2;
+          results.push(`${handLabel}: WIN 21 (+${hand.bet} ${bjData.type})`);
+        } else if (dealerTotal === 21) {
+          totalWin += hand.bet;
+          results.push(`${handLabel}: PUSH 21 (${hand.bet} ${bjData.type} returned)`);
+        } else {
+          totalWin += hand.bet * 2;
+          results.push(`${handLabel}: WIN 21 (+${hand.bet} ${bjData.type})`);
+        }
+        continue;
+      }
       
       if (dealerTotal > 21) {
         totalWin += hand.bet * 2;
@@ -603,15 +602,21 @@ handler.before = async (m) => {
       let total = calculateTotal(hand.cards);
       bjData.canDouble = false;
 
+      // FIXED: Handle 21 points correctly
       if (total > 21) {
-  hand.status = 'bust';
-} else if (total === 21) {
-  if (hand.cards.length === 2) {
-    hand.status = 'blackjack';
-  } else {
-    hand.status = 'stand';
-  }
-}
+        hand.status = 'bust';
+      } else if (total === 21) {
+        if (hand.cards.length === 2) {
+          hand.status = 'blackjack';
+        } else {
+          hand.status = 'stand';
+          // Auto-resolve if player gets 21
+          if (bjData.playerHands.length === 1) {
+            await resolveGame();
+            return;
+          }
+        }
+      }
 
       // Check if this was the last active hand
       if (bjData.playerHands.length > 1) {
@@ -623,7 +628,7 @@ handler.before = async (m) => {
 
 ╭─ 🃏 HAND ${handIndex + 1}
 │ Cards: ${hand.cards.join(" ")}
-│ Total: ${total} ${total > 21 ? '(BUST)' : ''}
+│ Total: ${total} ${total > 21 ? '(BUST)' : total === 21 ? '(21!)' : ''}
 ├─ 🃏 HAND ${bjData.currentHand + 1} (Current)
 │ Cards: ${bjData.playerHands[bjData.currentHand].cards.join(" ")}
 │ Total: ${calculateTotal(bjData.playerHands[bjData.currentHand].cards)}
@@ -672,6 +677,12 @@ handler.before = async (m) => {
           });
           clearTimeout(bjData.timeout);
           delete conn.bj[m.sender];
+          return;
+        }
+
+        // If total is 21, auto-resolve game
+        if (total === 21) {
+          await resolveGame();
           return;
         }
 
