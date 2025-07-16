@@ -250,8 +250,8 @@ welcomeText = welcomeText
 let welcomeImage;
 try {
 console.log("Creating welcome image with Canvafy...");
-const backgroundPath = "./media/background.jpg"; // Local file path
-const avatarPath = "./media/levelup.jpg"; // Default avatar path
+const backgroundPath = "./media/welcomeleave.jpg"; // Local file path
+const avatarPath = "./media/user.jpg"; // Default avatar path
 
 welcomeImage = await new canvafy.WelcomeLeave()
 .setAvatar(pp || avatarPath) // Use profile picture or default
