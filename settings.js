@@ -40,7 +40,7 @@ global.ownerBot = `${nomerOwner}@s.whatsapp.net`
 global.gamewaktu = 60;
 global.limitCount = 30;
 global.Intervalmsg = 1000; //detik
-global.mongodb ="mongodb+srv://sanzverse:<db_password>@herta4.z8spet0.mongodb.net/?retryWrites=true&w=majority"
+global.mongodb ="mongodb+srv://sanzverse:sanzverse@herta4.z8spet0.mongodb.net/?retryWrites=true&w=majority"
 global.dbName = "sanzzonly"
 global.redisdb = ''//'default:h9uWVPicTOatFOmZHsmyO4YJb83X5Pgy@redis-10292.c1.ap-southeast-1-1.ec2.cloud.redislabs.com:10292'//'default:nfsmwROCK909@redis-10292.c1.ap-southeast-1-1.ec2.cloud.redislabs.com:10292'
 global.myUrl = "https://wa.me/c/6281401689098"
