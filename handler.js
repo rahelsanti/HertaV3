@@ -46,7 +46,7 @@ const spammer = []
  
 
 var Ownerin = `148228381093904@lid`
-var ownerNumber = [`148228381093904@lid`, `${nomerOwner}@s.whatsapp.net`]
+var ownerNumber = [`148228381093904@lid`, `${nomerOwner}@s.whatsapp.net`, `${conn.user.jid}`]
 const Tnow = (new Date()/1000).toFixed(0)
 const seli = Tnow - m.messageTimestamp.low
 if (seli > Intervalmsg) return console.log((`Pesan ${Intervalmsg} detik yang lalu diabaikan agar tidak nyepam`))
