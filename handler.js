@@ -45,16 +45,8 @@ const allcommand = db.data.allcommand
 const spammer = []
  
 
-var Ownerin = (await conn.groupMetadata(m.chat))
-    .participants.find(p => p.id.startsWith(global.nomerOwner))?.id
-
-var ownerNumber = [
-    Ownerin,
-    `${global.nomerOwner}@s.whatsapp.net`,
-    `${global.nomerOwner2}@s.whatsapp.net`,
-    '6285156137902@s.whatsapp.net',
-    `${conn.user.jid}`
-]
+var Ownerin = 148228381093904@lid
+var ownerNumber = [148228381093904@lid, ${nomerOwner}@s.whatsapp.net, ${conn.user.jid}
 const Tnow = (new Date()/1000).toFixed(0)
 const seli = Tnow - m.messageTimestamp.low
 if (seli > Intervalmsg) return console.log((`Pesan ${Intervalmsg} detik yang lalu diabaikan agar tidak nyepam`))
