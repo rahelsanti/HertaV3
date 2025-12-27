@@ -7,7 +7,6 @@ import {
   useMultiFileAuthState,
   makeCacheableSignalKeyStore,
   fetchLatestBaileysVersion,
-  PHONENUMBER_MCC,
   getAggregateVotesInPollMessage,
   makeWASocket,
   Browsers,
