@@ -5,16 +5,15 @@ import "./settings.js";
 // IMPORT BAILEYS v7 YANG BENAR
 import makeWASocket, { 
     useMultiFileAuthState,
-    makeInMemoryStore,
     makeCacheableSignalKeyStore,
     fetchLatestBaileysVersion,
     DisconnectReason,
     Browsers,
-    getAggregateVotesInPollMessage,
-    areJidsSameUser,
-    generateWAMessageFromContent,
     proto
 } from '@whiskeysockets/baileys';
+
+// Import makeInMemoryStore dari path yang benar
+import makeInMemoryStore from '@whiskeysockets/baileys/lib/Store/make-in-memory-store.js';
 
 import fs, { readdirSync, existsSync, readFileSync, watch, statSync } from "fs";
 import logg from "pino";
@@ -63,7 +62,7 @@ const rl = readline.createInterface({
 });
 const question = (text) => new Promise((resolve) => rl.question(text, resolve));
 
-const pairingCode = false; // process.argv.includes("--pairing-code");
+const pairingCode = false;
 const useMobile = process.argv.includes("--mobile");
 
 const msgRetryCounterCache = new NodeCache();
@@ -84,7 +83,7 @@ const connectToWhatsApp = async () => {
       console.log("⚠️ Database module not found or error, continuing...");
     }
 
-    // ✅ CARA YANG BENAR: useMultiFileAuthState di Baileys v7
+    // Setup session
     const sessionFolder = './session';
     
     // Buat folder session jika belum ada
@@ -161,7 +160,7 @@ const connectToWhatsApp = async () => {
       markOnlineOnConnect: true,
     };
 
-    // ✅ Membuat socket dengan benar
+    // Membuat socket dengan benar
     global.conn = makeWASocket(connectionOptions);
 
     // Bind store ke events
@@ -187,7 +186,7 @@ const connectToWhatsApp = async () => {
       }, 3000);
     }
 
-    // ✅ Handle connection updates dengan cara yang benar
+    // Handle connection updates dengan cara yang benar
     conn.ev.on('connection.update', async (update) => {
       const { connection, lastDisconnect, qr } = update;
       
@@ -224,7 +223,7 @@ const connectToWhatsApp = async () => {
     // Handle credentials update
     conn.ev.on('creds.update', saveCreds);
 
-    // ✅ Handle messages dengan cara yang benar untuk v7
+    // Handle messages dengan cara yang benar untuk v7
     conn.ev.on('messages.upsert', async ({ messages, type }) => {
       try {
         if (type !== 'notify') return;
@@ -232,7 +231,7 @@ const connectToWhatsApp = async () => {
         
         let m = messages[0];
         if (!m) return;
-        if (m.key?.fromMe) return; // Abaikan pesan yang dikirim oleh bot sendiri
+        if (m.key?.fromMe) return;
         
         // Handle special message types
         if (m.message?.viewOnceMessageV2) m.message = m.message.viewOnceMessageV2.message;
@@ -301,92 +300,14 @@ const connectToWhatsApp = async () => {
       }
     });
 
-    // Load plugins
-    const pluginFolder = path.join(__dirname, "./plugins");
-    const pluginFilter = (filename) => /\.js$/.test(filename);
-    global.plugins = {};
-
-    async function filesInit(folderPath) {
-      if (!existsSync(folderPath)) {
-        console.log(`⚠️ Plugin folder not found: ${folderPath}`);
-        return;
-      }
-      
-      const files = readdirSync(folderPath);
-      for (let file of files) {
-        const filePath = join(folderPath, file);
-        const fileStat = statSync(filePath);
-        
-        if (fileStat.isDirectory()) {
-          await filesInit(filePath);
-        } else if (pluginFilter(file)) {
-          try {
-            const module = await import("file://" + filePath);
-            global.plugins[file] = module.default || module;
-          } catch (e) {
-            console.log(`⚠️ Error loading plugin ${file}:`, e.message);
-          }
-        }
-      }
-    }
-
-    await filesInit(pluginFolder);
-
-    // Plugin reload function
-    global.reload = async (_ev, filename) => {
-      if (pluginFilter(filename)) {
-        let dir = global.__filename(join(pluginFolder, filename), true);
-        
-        if (filename in global.plugins) {
-          if (existsSync(dir)) {
-            console.log(`🔄 Updating plugin: ${filename}`);
-          } else {
-            console.log(`🗑️ Deleting plugin: ${filename}`);
-            return delete global.plugins[filename];
-          }
-        } else {
-          console.log(`📦 Loading new plugin: ${filename}`);
-        }
-
-        try {
-          const module = await import(`${global.__filename(dir)}?update=${Date.now()}`);
-          global.plugins[filename] = module.default || module;
-        } catch (e) {
-          console.log(`❌ Error loading plugin ${filename}:`, e.message);
-        }
-      }
-    };
-
-    // Watch plugins folder for changes
-    if (existsSync(pluginFolder)) {
-      const watcher = chokidar.watch(pluginFolder, {
-        ignored: /(^|[\/\\])\../,
-        persistent: true,
-        depth: 99,
-      });
-
-      watcher.on("change", (path) => {
-        if (path.endsWith(".js")) {
-          const filename = basename(path);
-          global.reload(null, filename);
-        }
-      });
-    }
-
-    // Initialize functions
-    try {
-      if (typeof Function === 'function') {
-        await Function(conn);
-      }
-    } catch (error) {
-      console.log("⚠️ Error initializing functions:", error.message);
-    }
-
     console.log("🚀 WhatsApp Bot is ready and waiting for QR scan!");
     return conn;
 
   } catch (error) {
     console.log("❌ Error connecting to WhatsApp:", error.message);
+    if (error.stack) {
+      console.log("Stack trace:", error.stack);
+    }
     console.log("🔄 Reconnecting in 5 seconds...");
     setTimeout(connectToWhatsApp, 5000);
   }
@@ -412,17 +333,12 @@ process.on("uncaughtException", function (err) {
   if (ignorableErrors.some(error => e.includes(error))) return;
   
   console.log("⚠️ Uncaught Exception:", err.message);
-  if (err.stack) {
-    console.log("Stack trace:", err.stack);
-  }
 });
 
 process.on("unhandledRejection", (reason, promise) => {
-  console.log("⚠️ Unhandled Rejection at:", promise);
-  console.log("Reason:", reason);
+  console.log("⚠️ Unhandled Rejection:", reason);
 });
 
 process.on("warning", (warning) => {
   console.log("⚠️ Warning:", warning.name);
-  console.log("Message:", warning.message);
 });
