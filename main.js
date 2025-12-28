@@ -14,7 +14,7 @@ import makeWASocket, {
 
 import fs, { readdirSync, existsSync, readFileSync, watch, statSync } from "fs";
 import logg from "pino";
-import { smsg, protoType } from "./lib/simple.js"; // use persistent store from lib/simple.js
+import { smsg, protoType, store} from "./lib/simple.js"; // use persistent store from lib/simple.js
 import CFonts from "cfonts";
 import path, { join, dirname, basename } from "path";
 import { memberUpdate, groupsUpdate } from "./message/group.js";
