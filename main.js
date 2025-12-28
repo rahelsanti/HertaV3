@@ -2,19 +2,19 @@
 
 import "./settings.js";
 
-// IMPORT BAILEYS v7 YANG BENAR
-import { 
-    makeWASocket,
+// ✅ IMPOR YANG BENAR SESUAI DOKUMENTASI RESMI
+import makeWASocket, {
     useMultiFileAuthState,
+    makeInMemoryStore,
     makeCacheableSignalKeyStore,
     fetchLatestBaileysVersion,
     DisconnectReason,
     Browsers,
-    proto
+    proto,
+    getAggregateVotesInPollMessage,
+    areJidsSameUser,
+    generateWAMessageFromContent
 } from '@whiskeysockets/baileys';
-
-// Import makeInMemoryStore dari lokasi yang benar
-import { makeInMemoryStore } from '@whiskeysockets/baileys';
 
 import fs, { readdirSync, existsSync, readFileSync, watch, statSync } from "fs";
 import logg from "pino";
@@ -74,7 +74,7 @@ CFonts.say("fearless", {
   gradient: ["red", "magenta"],
 });
 
-// Connect to WhatsApp
+// ✅ CONNECT TO WHATSAPP SESUAI CONTOH RESMI
 const connectToWhatsApp = async () => {
   try {
     // Import database (jika ada)
@@ -84,7 +84,7 @@ const connectToWhatsApp = async () => {
       console.log("⚠️ Database module not found or error, continuing...");
     }
 
-    // Setup session
+    // ✅ SESUAI CONTOH RESMI: useMultiFileAuthState
     const sessionFolder = './session';
     
     // Buat folder session jika belum ada
@@ -94,7 +94,7 @@ const connectToWhatsApp = async () => {
     
     const { state, saveCreds } = await useMultiFileAuthState(sessionFolder);
 
-    // Buat store
+    // ✅ SESUAI CONTOH RESMI: makeInMemoryStore
     const store = makeInMemoryStore({
       logger: logg().child({ level: "fatal", stream: "store" }),
     });
@@ -102,7 +102,7 @@ const connectToWhatsApp = async () => {
     const { version, isLatest } = await fetchLatestBaileysVersion();
     console.log(`📱 Using WhatsApp version: ${version.join('.')}, isLatest: ${isLatest}`);
 
-    // Function to get message
+    // Function to get message (untuk store)
     const getMessage = async (key) => {
       if (store) {
         try {
@@ -115,7 +115,7 @@ const connectToWhatsApp = async () => {
       return undefined;
     };
 
-    // Auth configuration untuk Baileys v7
+    // Auth configuration
     const auth = {
       creds: state.creds,
       keys: makeCacheableSignalKeyStore(
@@ -124,7 +124,7 @@ const connectToWhatsApp = async () => {
       ),
     };
 
-    // Patch message for buttons (untuk compatibility)
+    // Patch message for buttons
     const patchMessageBeforeSending = (message) => {
       const requiresPatch = !!(
         message.buttonsMessage ||
@@ -147,7 +147,7 @@ const connectToWhatsApp = async () => {
       return message;
     };
 
-    // Connection options untuk Baileys v7
+    // ✅ CONNECTION OPTIONS SESUAI DOKUMENTASI
     const connectionOptions = {
       version,
       printQRInTerminal: !global.pairingCode,
@@ -166,7 +166,7 @@ const connectToWhatsApp = async () => {
       markOnlineOnConnect: true,
     };
 
-    // Membuat socket dengan benar
+    // ✅ MEMBUAT SOCKET DENGAN BENAR
     global.conn = makeWASocket(connectionOptions);
 
     // Bind store ke events
@@ -192,7 +192,7 @@ const connectToWhatsApp = async () => {
       }, 3000);
     }
 
-    // Handle connection updates dengan cara yang benar
+    // ✅ HANDLE CONNECTION UPDATE SESUAI CONTOH RESMI
     conn.ev.on('connection.update', async (update) => {
       const { connection, lastDisconnect, qr } = update;
       
@@ -229,7 +229,7 @@ const connectToWhatsApp = async () => {
     // Handle credentials update
     conn.ev.on('creds.update', saveCreds);
 
-    // Handle messages dengan cara yang benar untuk v7
+    // ✅ HANDLE MESSAGES SESUAI CONTOH RESMI
     conn.ev.on('messages.upsert', async ({ messages, type }) => {
       try {
         if (type !== 'notify') return;
@@ -311,9 +311,7 @@ const connectToWhatsApp = async () => {
 
   } catch (error) {
     console.log("❌ Error connecting to WhatsApp:", error.message);
-    if (error.stack) {
-      console.log("Stack trace:", error.stack);
-    }
+    console.log("Stack trace:", error.stack);
     console.log("🔄 Reconnecting in 5 seconds...");
     setTimeout(connectToWhatsApp, 5000);
   }
@@ -332,19 +330,15 @@ process.on("uncaughtException", function (err) {
     "Timed Out",
     "Value not found",
     "ERR_MODULE_NOT_FOUND",
-    "Cannot find package",
-    "useMultiFileAuthState is not a function"
+    "Cannot find package"
   ];
   
   if (ignorableErrors.some(error => e.includes(error))) return;
   
   console.log("⚠️ Uncaught Exception:", err.message);
+  console.log("Stack:", err.stack);
 });
 
 process.on("unhandledRejection", (reason, promise) => {
   console.log("⚠️ Unhandled Rejection:", reason);
-});
-
-process.on("warning", (warning) => {
-  console.log("⚠️ Warning:", warning.name);
 });
