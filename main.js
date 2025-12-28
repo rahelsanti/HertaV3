@@ -4,7 +4,6 @@ import "./settings.js";
 
 // FIX 1: IMPORT BAILEYS VERSI TERBARU (7.x) YANG BENAR
 import makeWASocket, {
-  makeInMemoryStore,
   useMultiFileAuthState,
   makeCacheableSignalKeyStore,
   fetchLatestBaileysVersion,
@@ -15,7 +14,7 @@ import makeWASocket, {
 
 import fs, { readdirSync, existsSync, readFileSync, watch, statSync } from "fs";
 import logg from "pino";
-import { smsg, protoType } from "./lib/simple.js"; // Hapus Socket karena sekarang pakai makeWASocket
+import { smsg, protoType, store } from "./lib/simple.js"; // use persistent store from lib/simple.js
 import CFonts from "cfonts";
 import path, { join, dirname, basename } from "path";
 import { memberUpdate, groupsUpdate } from "./message/group.js";
@@ -53,7 +52,8 @@ protoType();
 
 let phoneNumber = "916909137213";
 
-const readline = require("readline");
+const requireC = createRequire(import.meta.url);
+const readline = requireC("readline");
 const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout,
@@ -131,9 +131,8 @@ const connectToWhatsApp = async () => {
   const sessionPath = global.session || './session';
   const { state, saveCreds } = await useMultiFileAuthState(sessionPath);
 
-  const store = makeInMemoryStore({
-    logger: logg().child({ level: "fatal", stream: "store" }),
-  });
+  // use persistent store exported from ./lib/simple.js
+  // store already created in lib/simple.js and implements loadMessage & bind
 
   const { version, isLatest } = await fetchLatestBaileysVersion();
 
@@ -213,10 +212,10 @@ const connectToWhatsApp = async () => {
         const formattedCode = code.length === 8 ? 
           `${code.substring(0, 4)}-${code.substring(4)}` : code;
         
-        console.log(chalk.magenta(`📱 Pairing Code:`));
+        console.log(chalk.magenta(`ðŸ“± Pairing Code:`));
         console.log(chalk.magenta(`For: ${global.nomerBot}`));
         console.log(chalk.magenta(`Code: ${formattedCode}`));
-        console.log(chalk.magenta(`⏳ Masukkan di WhatsApp > Linked Devices`));
+        console.log(chalk.magenta(`â³ Masukkan di WhatsApp > Linked Devices`));
       } catch (err) {
         console.log(chalk.red(`Error: ${err.message}`));
         console.log(chalk.red(`Pastikan nomor ${global.nomerBot} benar (tanpa +)`));
