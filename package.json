@@ -10,15 +10,17 @@
     "message": "message"
   },
   "engines": {
-    "node": ">=20.0.0",
-    "npm": ">=10.0.0"
+    "node": "20.x",
+    "npm": "10.x"
   },
   "scripts": {
     "start": "node --optimize_for_size --max_old_space_size=512 --gc_interval=100 index.js",
     "dev": "node --watch index.js",
-    "heroku-postbuild": "echo 'Build completed successfully'",
+    "heroku-postbuild": "npm run fix-deps",
+    "fix-deps": "npm install --force",
     "fix-cheerio": "node fix-cheerio-imports.js",
-    "clean-install": "rm -rf node_modules package-lock.json && npm install"
+    "clean-install": "rm -rf node_modules package-lock.json && npm install",
+    "preinstall": "npm cache clean --force"
   },
   "author": "Dittaz",
   "license": "MIT",
@@ -42,7 +44,7 @@
     "canvafy": "^7.1.0",
     "cfonts": "^3.1.1",
     "chalk": "^5.3.0",
-    "cheerio": "github:Tiooxy/cheerio",
+    "cheerio": "^1.0.0-rc.12",
     "chess.js": "^1.4.0",
     "chokidar": "^3.5.3",
     "cloudku-uploader": "^2.2.5",
@@ -52,10 +54,10 @@
     "filestack-js": "^3.25.0",
     "fluent-ffmpeg": "^2.1.2",
     "form-data": "^4.0.0",
-    "fs-extra": "^11.0.0",
+    "fs-extra": "^11.1.1",
     "g-i-s": "^2.1.6",
     "got": "^12.5.3",
-    "jimp": "^0.22.12",
+    "jimp": "^1.6.0",
     "lowdb": "^6.1.1",
     "megajs": "^1.1.7",
     "moment-timezone": "^0.5.34",
@@ -72,7 +74,7 @@
     "parse-ms": "^2.1.0",
     "performance-now": "^2.1.0",
     "pidusage": "^3.0.2",
-    "pino": "^8.7.0",
+    "pino": "^8.15.6",
     "prettier": "^3.3.1",
     "qrcode": "^1.5.4",
     "qrcode-terminal": "^0.12.0",
@@ -85,7 +87,10 @@
     "wa-sticker-formatter": "^4.4.4",
     "webp-converter": "^2.3.3",
     "yt-search": "^2.7.6",
-    "ytdl-core": "github:distubejs/ytdl-core",
+    "ytdl-core": "^4.11.5",
     "zip-local": "^0.3.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0"
   }
 }
