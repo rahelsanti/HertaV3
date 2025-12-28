@@ -1,133 +1,148 @@
-//axios@0.20.0  "^0.27.2",
-import chalk from "chalk";
-import axios from "axios";
-import { fileURLToPath, URL } from "url";
-import cluster from "cluster";
-import { join, dirname } from "path";
-import fs from 'fs-extra'
-import Readline from "readline";
-import { config } from 'dotenv';
-import express from "express";
+//axios@0.20.0 "^0.27.2",
+mengimpor kapur dari "kapur";
+impor axios dari "axios";
+impor { fileURLToPath, URL } dari "url";
+impor klaster dari "klaster";
+impor { gabung, nama direktori } dari "jalur";
+impor fs dari 'fs-extra'
+impor Readline dari "readline";
+impor { konfigurasi } dari 'dotenv';
+impor ekspres dari "ekspres";
 
 const sleep = async (ms) => {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+  kembalikan Promise baru ((resolve) => setTimeout(resolve, ms));
 };
 
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
 const rl = Readline.createInterface(process.stdin, process.stdout);
-const PORT = process.env.PORT || 4000
-const HOST = '0.0.0.0';
+const PORT = parseInt(process.env.PORT) || 4000;
+konstanta HOST = '0.0.0.0';
 
 app.all('/', (req, res) => {
-  let html = fs.readFileSync('./index.html', 'utf-8')
-  res.end(html)
-})
-
-app.listen(PORT,HOST, () => {
-console.log(chalk.green(`🌐 Port ${PORT} is open`));
-console.log(chalk.green(`🌐 Keep Alive on`));
+  let html = fs.readFileSync('./index.html', 'utf-8');
+  res.end(html);
 });
 
-config();
+// Mulai server dengan fallback otomatis jika port sudah digunakan
+const startServer = (port) => {
+  const server = app.listen(port, HOST, () => {
+    console.log(chalk.green(`ðŸŒ Port ${port} is open`));
+    console.log(chalk.green(`ðŸŒ Keep Alive on`));
+  });
+
+  server.on('error', (err) => {
+    jika (err && err.code === 'EADDRINUSE') {
+      console.log(chalk.yellow(`Port ${port} sedang digunakan - mencoba ${port + 1}...`));
+      setTimeout(() => startServer(port + 1), 1000);
+    } kalau tidak {
+      console.error(chalk.red(`Kesalahan server: ${err}`));
+      proses.keluar(1);
+    }
+  });
+};
+
+startServer(PORT);
+
+konfigurasi();
 
 
 
-var error = 0 
+variabel error = 0
 
 var isRunning = false;
 /**
-* Start a js file
+* Mulai file js
 * @param {String} file `path/to/file`
 */
-function start(file) {
-if (isRunning) return;
+fungsi mulai(file) {
+jika (sedang berjalan) kembali;
 isRunning = true;
 let args = [join(__dirname, file), ...process.argv.slice(2)];
 
 cluster.setupMaster({
-exec: join(__dirname, file),
-args: args.slice(1),
+jalankan: gabungkan(__dirname, file),
+argumen: args.slice(1),
 });
-let p = cluster.fork();
-p.on("message",async (data) => {
+misalkan p = cluster.fork();
+p.on("pesan",async (data) => {
 //console.log("[RECEIVED]", data);
-switch (data) {
-case "reset":
-console.log("saatnya reset");
+beralih (data) {
+kasus "reset":
+console.log("saatnya direset");
 p.process.kill();
 isRunning = false;
-start.apply(this, arguments);
-break;
-case "null":
+mulai.terapkan(ini, argumen);
+merusak;
+kasus "null":
 p.process.kill();
 isRunning = false;
-start.apply(this, arguments);
-    console.log(chalk.yellowBright.bold(`System error total: ${error}`))
-break;
-case "SIGKILL":
+mulai.terapkan(ini, argumen);
+    console.log(chalk.yellowBright.bold(`Total kesalahan sistem: ${error}`))
+merusak;
+kasus "SIGKILL":
 p.process.kill();
 isRunning = false;
-start.apply(this, arguments);
-break;
-case "uptime":
+mulai.terapkan(ini, argumen);
+merusak;
+kasus "uptime":
 p.send(process.uptime());
-break;
+merusak;
 }
 });
 
-//exit
+//KELUAR
 p.on("exit", async (_, code) => {
-console.error(chalk.red(`🛑 Exited with code: ${code}`));
-console.error(chalk.red(`❌ Script will restart...`));
+console.error(chalk.red(`ðŸ›' Keluar dengan kode: ${code}`));
+console.error(chalk.red(`â Œ Skrip akan dimulai ulang...`));
 
-if(error > 4) {
-console.log(chalk.yellowBright.bold(`Terjadi error lebih dari ${error} kali, system di hentikan selama satu jam`))
+jika (kesalahan > 4) {
+console.log(chalk.YellowBright.bold(`Terjadi error lebih dari ${error} kali, sistem dihentikan selama satu jam`))
   
-setInterval( async () => {
-error = 0
+setInterval(async () => {
+kesalahan = 0
   p.process.kill();
   isRunning = false;
-  start.apply(this, arguments);
-console.log(chalk.yellowBright.bold(`System error telah di reset, total system error ${error}`))
-},  60000 * 60);
+  mulai.terapkan(ini, argumen);
+console.log(chalk.yellowBright.bold(`System error telah direset, total system error ${error}`))
+}, 60000 * 60);
 
 } else if(error < 5) {
 
   
-setInterval( async () => {
-error = 0
+setInterval(async () => {
+kesalahan = 0
 }, 60000 * 5);
 
   
   
-if (code == null) {
-//await sleep(10000) 
-error += 1
+jika (kode == null) {
+//tunggu tidur (10000)
+kesalahan += 1
 p.process.kill();
 isRunning = false;
-start.apply(this, arguments);
-console.log(chalk.yellowBright.bold(`System error total: ${error}`))
+mulai.terapkan(ini, argumen);
+console.log(chalk.yellowBright.bold(`Total kesalahan sistem: ${error}`))
 } else if (code == "SIGKILL") {
 p.process.kill();
 isRunning = false;
-start.apply(this, arguments);
-} else  if (code == "SIGBUS") {
+mulai.terapkan(ini, argumen);
+} else if (code == "SIGBUS") {
 p.process.kill();
 isRunning = false;
-start.apply(this, arguments);
-} else  if (code == "SIGABRT") {
+mulai.terapkan(ini, argumen);
+} else if (code == "SIGABRT") {
 p.process.kill();
 isRunning = false;
-start.apply(this, arguments);
-} else  if (code === 0) {
-//await sleep(10000) 
-error += 1
+mulai.terapkan(ini, argumen);
+} else if (code === 0) {
+//tunggu tidur (10000)
+kesalahan += 1
 p.process.kill();
 isRunning = false;
-start.apply(this, arguments);
-console.log(chalk.yellowBright.bold(`System error total: ${error}`))
+mulai.terapkan(ini, argumen);
+console.log(chalk.yellowBright.bold(`Total kesalahan sistem: ${error}`))
 }
 
 }// akhir dari error < 5
@@ -138,42 +153,42 @@ isRunning = false;
 /*
 fs.watchFile(args[0], () => {
 fs.unwatchFile(args[0]);
-start(file);
+mulai(file);
 });
 
-if (!rl.listenerCount())
+jika (!rl.listenerCount())
 rl.on("line", (line) => {
-p.emit("message", line.trim());
+p.emit("pesan", line.trim());
 });
   */
 });
 
 //unhandledRejection
 p.on("unhandledRejection", async () => {
-console.error(
-chalk.red(`❌ Unhandled promise rejection. Script will restart...`)
+konsol.kesalahan(
+chalk.red(`â Œ Penolakan janji yang tidak ditangani. Skrip akan dimulai ulang...`)
 );
-await sleep(10000)
-  error += 1
+tunggu tidur(10000)
+  kesalahan += 1
 p.process.kill();
 isRunning = false;
-start.apply(this, arguments);
-  console.log(chalk.yellowBright.bold(`System error total: ${error}`))
+mulai.terapkan(ini, argumen);
+  console.log(chalk.yellowBright.bold(`Total kesalahan sistem: ${error}`))
 });
 
-//error
+//kesalahan
 p.on("error", async (err) => {
-console.error(chalk.red(`❌ Error: ${err}`));
-await sleep(10000) 
-  error += 1
+console.error(chalk.red(`â Œ Error: ${err}`));
+tunggu tidur(10000)
+  kesalahan += 1
 p.process.kill();
 isRunning = false;
-start.apply(this, arguments);
+mulai.terapkan(ini, argumen);
 });
 
 }
 
-start("main.js");
+mulai("main.js");
 //start("test.js");
 
 
@@ -181,16 +196,16 @@ start("main.js");
 
 
 
-//KEEP ALIVE
-function keepAlive() {
+//MEMPERTAHANKAN
+fungsi keepAlive() {
 const url = `https://a7189f57-1f15-4060-b97e-853222c15d2e-00-uy10zij1nl6y.teams.replit.dev`;
-if (/(\/\/|\.)undefined\./.test(url)) return;
-setInterval( async () => {
+jika (/(\/\/|\.)undefined\./.test(url)) kembalikan;
+setInterval(async () => {
 //console.log('pinging...')
 //fetch(url).catch(console.error);
 
- let response = await axios(url)
+ biarkan respons = tunggu axios(url)
 if(error < 5) console.log(chalk.yellowBright.bold('Server wake-up! --', response.status))
   
-},  1000 * 60);
+}, 1000 * 60);
 }
