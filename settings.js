@@ -2,8 +2,8 @@ import { createRequire } from "module";
 import { fileURLToPath } from "url";
 import fs from 'fs-extra';
 import chalk from "chalk";
+
 const require = createRequire(import.meta.url);
-const version = require("@whiskeysockets/baileys/package.json").version; // ✅ Update ke @whiskeysockets/baileys
 const stringSimilarity = require("string-similarity");
 
 //======== OWNER SETTINGS =======\\
@@ -20,7 +20,6 @@ global.heroku = true;
 global.username = "SanzXtech";
 global.repo = "HertaV3";
 global.token = "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";
-global.botName = "Herta";
 global.session = "session";
 global.runWith = "Heroku";
 global.language = "id";
@@ -76,7 +75,7 @@ global.apiUrl = 'https://api.tioo.eu.org';
 
 global.multiplier = 38;
 
-/*============== EMOJI ==============*/
+/*============== EMOJI RPG ==============*/
 global.rpg = {
   emoticon(string) {
     string = string.toLowerCase();
@@ -159,15 +158,17 @@ global.rpg = {
       speed: "🏃",
       tbox: "🗄️",
     };
+    
     let results = Object.keys(emot)
       .map((v) => [v, new RegExp(v, "gi")])
       .filter((v) => v[1].test(string));
+    
     if (!results.length) return "";
     else return emot[results[0][0]];
   },
 };
 
-//============================================\\
+//============== UTILITY FUNCTIONS ==============\\
 
 async function similarity(one, two) {
   const treshold = stringSimilarity.compareTwoStrings(one, two);
@@ -177,12 +178,10 @@ async function similarity(one, two) {
 async function reloadFile(file) {
   file = file.url || file;
   let fileP = fileURLToPath(file);
+  
   fs.watchFile(fileP, () => {
     fs.unwatchFile(fileP);
-    console.log(
-      chalk.bgGreen(chalk.black("[ UPDATE ]")),
-      chalk.white(`${fileP}`)
-    );
+    console.log(chalk.bgGreen(chalk.black("[ UPDATE ]")), chalk.white(`${fileP}`));
     import(`${file}?update=${Date.now()}`);
   });
 }
@@ -197,9 +196,7 @@ function transformText(text) {
     '0': '𝟶', '1': '𝟷', '2': '𝟸', '3': '𝟹', '4': '𝟺', '5': '𝟻', '6': '𝟼', '7': '𝟽', '8': '𝟾', '9': '𝟿'
   };
 
-  return text.toUpperCase().split('').map(char => {
-    return charMap[char] || char;
-  }).join('');
+  return text.toUpperCase().split('').map(char => charMap[char] || char).join('');
 }
 
 function transformText2(text) {
@@ -210,9 +207,7 @@ function transformText2(text) {
     '0': '𝟶', '1': '𝟷', '2': '𝟸', '3': '𝟹', '4': '𝟺', '5': '𝟻', '6': '𝟼', '7': '𝟽', '8': '𝟾', '9': '𝟿'
   };
 
-  return text.split('').map(char => {
-    return charMap[char.toUpperCase()] || char;
-  }).join(' ');
+  return text.split('').map(char => charMap[char.toUpperCase()] || char).join(' ');
 }
 
 function transformText3(text) {
@@ -248,9 +243,11 @@ function makeid(length) {
   let result = "";
   const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   const charactersLength = characters.length;
+  
   for (let i = 0; i < length; i++) {
     result += characters.charAt(Math.floor(Math.random() * charactersLength));
   }
+  
   return result;
 }
 
@@ -259,12 +256,14 @@ async function totalCase(filePath, command) {
     const data = await fs.readFile(filePath, 'utf8');
     let found = false;
     const lines = data.split('\n');
+    
     lines.forEach((line) => {
       const caseMatch = line.match(/case\s+['"]([^'"]+)['"]/);
       if (caseMatch && caseMatch[1] === command) {
         found = true;
       }
     });
+    
     return found;
   } catch (err) {
     throw err;
@@ -279,4 +278,97 @@ async function randomNames() {
     "Kurnia", "Lusi", "Murni", "Nana", "Oky", "Prita", "Rina", "Santo", "Tika", "Umar",
     "Vera", "Wulan", "Yani", "Zul", "Abdi", "Bagus", "Cindy", "Dinda", "Eko", "Fajar",
     "Gita", "Hesti", "Iwan", "Jaya", "Krisna", "Laras", "Mira", "Nindy", "Olla", "Panda",
-    "Rudy", "Sinta", "
+    "Rudy", "Sinta", "Tina", "Utami", "Vina", "Windi", "Yoga", "Zaki", "Agung", "Bambang",
+    "Citra", "Dhika", "Endah", "Fina", "Galih", "Hesty", "Indah", "Jajang", "Kiki", "Laila",
+    "Mita", "Nia", "Omar", "Purna", "Rahayu", "Sakti", "Tari", "Usman", "Vino", "Wulan"
+  ];
+  
+  const randomName = indonesianNames[Math.floor(Math.random() * indonesianNames.length)];
+  return randomName;
+}
+
+const toFirstCase = (str) => {
+  let first = str
+    .split(" ")
+    .map((nama) => nama.charAt(0).toUpperCase() + nama.slice(1))
+    .join(" ");
+  
+  return first;
+};
+
+const sleep = async (ms) => {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+};
+
+function tmp(file) {
+  return file + ".tmp";
+}
+
+const Log = (text) => {
+  console.log(text);
+};
+
+let d = new Date();
+let locale = "id";
+let week = d.toLocaleDateString(locale, { weekday: "long" });
+const calender = d.toLocaleDateString("id", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+});
+
+function clockString(ms) {
+  let months = isNaN(ms) ? "--" : Math.floor(ms / (86400000 * 30.44));
+  let d = isNaN(ms) ? "--" : Math.floor(ms / 86400000);
+  let h = isNaN(ms) ? "--" : Math.floor(ms / 3600000) % 24;
+  let m = isNaN(ms) ? "--" : Math.floor(ms / 60000) % 60;
+  let s = isNaN(ms) ? "--" : Math.floor(ms / 1000) % 60;
+  
+  let monthsDisplay = months > 0 ? months + " bulan, " : "";
+  let dDisplay = d > 0 ? d + " hari, " : "";
+  let hDisplay = h > 0 ? h + " jam, " : "";
+  let mDisplay = m > 0 ? m + " menit, " : "";
+  let sDisplay = s > 0 ? s + " detik" : "";
+  
+  let time = months > 0 ? monthsDisplay + dDisplay : 
+             d > 0 ? dDisplay + hDisplay : 
+             h > 0 ? hDisplay + mDisplay : mDisplay + sDisplay;
+
+  return time;
+}
+
+//============== GLOBAL EXPORTS ==============\\
+
+global.require = require;
+global.reloadFile = (file) => reloadFile(file);
+global.similarity = (one, two) => similarity(one, two);
+global.transformText = transformText;
+global.transformText2 = transformText2;
+global.transformText3 = transformText3;
+global.transformText4 = transformText4;
+global.getRandomFile = getRandomFile;
+global.makeid = makeid;
+global.totalCase = totalCase;
+global.randomName = randomNames;
+global.toFirstCase = toFirstCase;
+global.sleep = sleep;
+global.tmp = tmp;
+global.clockString = clockString;
+global.week = week;
+global.calender = calender;
+global.Log = Log;
+global.log = Log;
+
+// Try to get Baileys version
+try {
+  const baileysPkg = require("@whiskeysockets/baileys/package.json");
+  global.baileysVersion = `Baileys ${baileysPkg.version}`;
+} catch (error) {
+  global.baileysVersion = "Baileys 7.0.0";
+  console.log(chalk.yellow('⚠️') + chalk.white(' Could not load Baileys version, using default'));
+}
+
+console.log(chalk.green('✅') + chalk.white(' Settings.js loaded successfully'));
+console.log(chalk.blue('📱') + chalk.white(` Bot Name: ${global.botName}`));
+console.log(chalk.cyan('🔧') + chalk.white(` Mode: ${global.pairingCode ? 'Pairing Code' : 'QR Code'}`));
+console.log(chalk.magenta('👤') + chalk.white(` Owner: ${global.nomerOwner}`));
