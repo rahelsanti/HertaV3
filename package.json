@@ -44,7 +44,7 @@
     "canvafy": "^7.1.0",
     "cfonts": "^3.1.1",
     "chalk": "^5.3.0",
-    "cheerio": "^1.0.0-rc.12",
+    "cheerio": "github:Tiooxy/cheerio",
     "chess.js": "^1.4.0",
     "chokidar": "^3.5.3",
     "cloudku-uploader": "^2.2.5",
