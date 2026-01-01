@@ -17,33 +17,18 @@ const sleep = async (ms) => {
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
 const rl = Readline.createInterface(process.stdin, process.stdout);
-const PORT = parseInt(process.env.PORT) || 4000;
+const PORT = process.env.PORT || 4000
 const HOST = '0.0.0.0';
 
 app.all('/', (req, res) => {
-  let html = fs.readFileSync('./index.html', 'utf-8');
-  res.end(html);
+  let html = fs.readFileSync('./index.html', 'utf-8')
+  res.end(html)
+})
+
+app.listen(PORT,HOST, () => {
+console.log(chalk.green(`🌐 Port ${PORT} is open`));
+console.log(chalk.green(`🌐 Keep Alive on`));
 });
-
-// Start server with auto-fallback if port is already in use
-const startServer = (port) => {
-  const server = app.listen(port, HOST, () => {
-    console.log(chalk.green(`🌐 Port ${port} is open`));
-    console.log(chalk.green(`🌐 Keep Alive on`));
-  });
-
-  server.on('error', (err) => {
-    if (err && err.code === 'EADDRINUSE') {
-      console.log(chalk.yellow(`Port ${port} in use - trying ${port + 1}...`));
-      setTimeout(() => startServer(port + 1), 1000);
-    } else {
-      console.error(chalk.red(`Server error: ${err}`));
-      process.exit(1);
-    }
-  });
-};
-
-startServer(PORT);
 
 config();
 
