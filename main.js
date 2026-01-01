@@ -2,248 +2,678 @@
 
 import "./settings.js";
 
-// ✅ BAILEYS V7 IMPORT
-import makeWASocket, {
+const {
+
+  makeInMemoryStore,
+
   useMultiFileAuthState,
+
   makeCacheableSignalKeyStore,
-  Browsers
-} from '@whiskeysockets/baileys';
+
+  MessageRetryMap,
+
+  fetchLatestBaileysVersion,
+
+  PHONENUMBER_MCC,
+
+  getAggregateVotesInPollMessage
+
+} = (await import("baileys")).default;
 
 import fs, { readdirSync, existsSync, readFileSync, watch, statSync } from "fs";
+
 import logg from "pino";
-import { smsg, protoType, store } from "./lib/simple.js";
+
+import { Socket, smsg, protoType } from "./lib/simple.js";
+
 import CFonts from "cfonts";
-import path, { join, dirname } from "path";
-import { memberUpdate } from "./message/group.js";
+
+import path, { join, dirname, basename } from "path";
+
+import { memberUpdate, groupsUpdate } from "./message/group.js";
+
 import { antiCall } from "./message/anticall.js";
+
 import { connectionUpdate } from "./message/connection.js";
+
 import { Function } from "./message/function.js";
+
 import NodeCache from "node-cache";
+
 import { createRequire } from "module";
+
 import { fileURLToPath, pathToFileURL } from "url";
+
 import { platform } from "process";
+
 import syntaxerror from "syntax-error";
+
 import { format } from "util";
+
 import chokidar from "chokidar";
+
 import chalk from "chalk";
+
 import util from "util";
+
+const { proto, generateWAMessage,  areJidsSameUser } = require('baileys')
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 global.__filename = function filename(
+
   pathURL = import.meta.url,
+
   rmPrefix = platform !== "win32"
+
 ) {
+
   return rmPrefix
+
     ? /file:\/\/\//.test(pathURL)
+
       ? fileURLToPath(pathURL)
+
       : pathURL
+
     : pathToFileURL(pathURL).toString();
+
 };
 
+/*
+
+global.__dirname = function dirname(pathURL) {
+
+return path.dirname(global.__filename(pathURL, true))
+
+};
+
+*/
+
 global.__require = function require(dir = import.meta.url) {
+
   return createRequire(dir);
+
 };
 
 protoType();
 
-const requireC = createRequire(import.meta.url);
-const readline = requireC("readline");
+let phoneNumber = "916909137213";
+
+const readline = require("readline");
+
 const rl = readline.createInterface({
+
   input: process.stdin,
+
   output: process.stdout,
+
 });
 
-const pairingCode = false;
+const question = (text) => new Promise((resolve) => rl.question(text, resolve));
+
+const pairingCode = false; // process.argv.includes("--pairing-code");
+
+const useMobile = process.argv.includes("--mobile");
+
 const msgRetryCounterCache = new NodeCache();
 
-// ✅ MESSAGERETRYMAP UNTUK BAILEYS V7
-const msgRetryCounterMap = {
-  get: (key) => msgRetryCounterCache.get(key) || 0,
-  set: (key, value) => msgRetryCounterCache.set(key, value)
-};
+const msgRetryCounterMap = (MessageRetryMap) => {};
 
 CFonts.say("fearless", {
+
   font: "chrome",
+
   align: "left",
+
   gradient: ["red", "magenta"],
+
 });
 
-// Connect to WhatsApp
+//Connect to WhatsApp
+
 const connectToWhatsApp = async () => {
-  try {
-    // Load database
-    const loadDatabase = (await import("./message/database.js")).default;
-    await loadDatabase();
 
-    // Session path
-    const sessionPath = global.session || './session';
-    const { state, saveCreds } = await useMultiFileAuthState(sessionPath);
+  await (await import("./message/database.js")).default();
 
-    // ✅ BAILEYS V7 - TIDAK PERLU fetchLatestBaileysVersion
-    const version = [2, 2413, 1];
+  //const { state } = useSingleFileAuthState('./session.json')
 
-    // Get message function
-    const getMessage = async (key) => {
-      if (store) {
-        const msg = await store.loadMessage(key.remoteJid, key.id, undefined);
-        return msg?.message || undefined;
-      }
-      return {};
-    };
+  const { state, saveCreds } = await useMultiFileAuthState(session);
 
-    // Auth state
-    const auth = {
-      creds: state.creds,
-      keys: makeCacheableSignalKeyStore(
-        state.keys,
-        logg().child({ level: "fatal", stream: "store" })
-      ),
-    };
+  const store = makeInMemoryStore({
 
-    // ✅ CONFIG BAILEYS V7
-    const connectionOptions = {
-      version,
-      printQRInTerminal: !global.pairingCode,
-      logger: logg({ level: "fatal" }),
-      auth,
-      browser: Browsers.ubuntu('Chrome'),
-      getMessage,
-      msgRetryCounterMap,
-      keepAliveIntervalMs: 20000,
-      connectTimeoutMs: 30000,
-      emitOwnEvents: true,
-      generateHighQualityLinkPreview: true,
-      syncFullHistory: false,
-      markOnlineOnConnect: true,
-      msgRetryCounterCache,
-    };
+    logger: logg().child({ level: "fatal", stream: "store" }),
 
-    // Create connection
-    global.conn = makeWASocket(connectionOptions);
+  });
 
-    // Bind store
-    store.bind(conn.ev);
+  const { version, isLatest } = await fetchLatestBaileysVersion();
 
-    // ✅ PAIRING CODE BAILEYS V7
-    if (global.pairingCode && !conn.authState.creds.registered) {
-      setTimeout(async () => {
-        try {
-          if (global.nomerBot) {
-            const code = await conn.requestPairingCode(global.nomerBot);
-            const formattedCode = code.length === 8 ? 
-              `${code.substring(0, 4)}-${code.substring(4)}` : code;
-            
-            console.log(chalk.magenta(`\n📱 PAIRING CODE`));
-            console.log(chalk.magenta(`Untuk: ${global.nomerBot}`));
-            console.log(chalk.magenta(`Kode: ${formattedCode}`));
-            console.log(chalk.magenta(`⏣ Masukkan di WhatsApp > Linked Devices\n`));
-          }
-        } catch (err) {
-          console.log(chalk.red(`Error pairing: ${err.message}`));
-        }
-      }, 5000);
+  //Funtion agar pesan bot tidak pending
+
+  const getMessage = async (key) => {
+
+    if (store) {
+
+      const msg = await store.loadMessage(key.remoteJid, key.id, undefined);
+
+      return msg?.message || undefined;
+
     }
 
-    // Event handlers
-    conn.ev.on('connection.update', async (update) => {
-      await connectionUpdate(connectToWhatsApp, conn, update);
-    });
+    // only if store is present
 
-    conn.ev.on('creds.update', saveCreds);
+    return proto.Message.fromObject({});
 
-    conn.ev.on('messages.upsert', async ({ messages, type }) => {
-      try {
-        if (!messages || !messages[0]) return;
-        
-        let m = messages[0];
-        if (m.key.fromMe) return;
-        
-        // Process message
-        m = await smsg(conn, m);
-        
-        // Load handler
-        const { handler } = await import(`./handler.js?v=${Date.now()}`).catch(
-          (err) => console.log(chalk.red(`Handler: ${err.message}`))
-        );
-        
-        if (handler) {
-          await handler(conn, m, { messages, type }, store);
-        }
-        
-        // Log message
-        if (m.body) {
-          console.log(chalk.magenta(`${m.pushname || 'Unknown'}: `) + chalk.white(m.body.substring(0, 100)));
-        }
-        
-      } catch(err) {
-        console.log(chalk.red(`Message error: ${err.message}`));
-      }
-    });
+  };
 
-    conn.ev.on('call', async (calls) => {
-      if (calls?.length > 0) {
-        antiCall(global.db, calls[0], conn);
-      }
-    });
+  //Untuk menyimpan session
 
-    conn.ev.on('group-participants.update', async (event) => {
-      memberUpdate(conn, event);
-    });
+  const auth = {
 
-    // Load plugins
-    const pluginFolder = path.join(__dirname, "./plugins");
-    global.plugins = {};
+    creds: state.creds,
 
-    async function loadPlugins(folderPath) {
-      const files = readdirSync(folderPath);
-      for (let file of files) {
-        const filePath = join(folderPath, file);
-        const fileStat = statSync(filePath);
-        
-        if (fileStat.isDirectory()) {
-          await loadPlugins(filePath);
-        } else if (file.endsWith('.js')) {
-          try {
-            const module = await import("file://" + filePath);
-            global.plugins[file] = module.default || module;
-          } catch (e) {
-            console.log(chalk.red(`Plugin error ${file}: ${e.message}`));
-          }
-        }
-      }
+    /** caching makes the store faster to send/recv messages */
+
+    keys: makeCacheableSignalKeyStore(
+
+      state.keys,
+
+      logg().child({ level: "fatal", stream: "store" })
+
+    ),
+
+  };
+
+  //Funtion agar bisa pake button di bailey terbaru
+
+  const patchMessageBeforeSending = (message) => {
+
+    const requiresPatch = !!(
+
+      message.buttonsMessage ||
+
+      message.listMessage ||
+
+      message.templateMessage
+
+    );
+
+    if (requiresPatch) {
+
+      message = {
+
+        viewOnceMessage: {
+
+          message: {
+
+            messageContextInfo: {
+
+              deviceListMetadataVersion: 2,
+
+              deviceListMetadata: {},
+
+            },
+
+            ...message,
+
+          },
+
+        },
+
+      };
+
     }
 
-    await loadPlugins(pluginFolder);
+    return message;
 
-    // Initialize function
-    Function(conn);
-    
-    console.log(chalk.green('✅ Bot berhasil terhubung!'));
-    return conn;
-    
-  } catch (error) {
-    console.log(chalk.red(`❌ Connection error: ${error.message}`));
-    // Restart after 5 seconds
-    setTimeout(connectToWhatsApp, 5000);
+  };
+
+  //Koneksi nih silakan di isi
+
+  const connectionOptions = {
+
+    version,
+
+    printQRInTerminal: !global.pairingCode,
+
+    patchMessageBeforeSending,
+
+    logger: logg({ level: "fatal" }),
+
+    auth,
+
+    browser: ["Ubuntu","Chrome"],
+
+    //browser: ["Chrome (Linux)", "", ""], //['Mac OS', 'chrome', '121.0.6167.159'], //  for this issues https://github.com/WhiskeySockets/Baileys/issues/328
+
+    getMessage,
+
+    MessageRetryMap,
+
+    keepAliveIntervalMs: 20000,
+
+    defaultQueryTimeoutMs: undefined, // for this issues https://github.com/WhiskeySockets/Baileys/issues/276
+
+    connectTimeoutMs: 30000,
+
+    emitOwnEvents: true,
+
+    fireInitQueries: true,
+
+    generateHighQualityLinkPreview: true,
+
+    syncFullHistory: true,
+
+    markOnlineOnConnect: true,
+
+    msgRetryCounterCache,
+
+  };
+
+  global.conn = Socket(connectionOptions);
+
+  //!global.pairingCode &&
+
+  store.bind(conn.ev);
+
+  if (global.pairingCode && !conn.authState.creds.registered) {
+
+/*
+
+    //const folderPath = './folder-yang-akan-dihapus';
+
+    if (fs.existsSync(`./${global.session}`)) {
+
+    // Menggunakan fs.rm
+
+    fs.rm(global.session, { recursive: true, force: true }, (err) => {
+
+      if (err) {
+
+        console.error('Error saat menghapus folder:', err);
+
+      } else {
+
+        console.log('Membersihkan Folder Session');
+
+      }
+
+    });
+
+  } 
+
+*/
+
+ 
+
+    setTimeout(async () => {
+
+      let code = await conn.requestPairingCode(global.nomerBot);
+
+      code = code?.match(/.{1,4}/g)?.join("-") || code;
+
+      console.log(
+
+        chalk.black(chalk.bgGreen(`Your Phone Number : `)),
+
+        chalk.black(chalk.white(global.nomerBot)),
+
+        chalk.black(chalk.bgGreen(`\nYour Pairing Code : `)),
+
+        chalk.black(chalk.white(code))
+
+      );
+
+    }, 3000);
+
   }
+
+  
+
+ 
+
+  conn.ev.process(async (events) => {
+
+    //Cnnection Update
+
+    if (events["connection.update"]) {
+
+      if (db.data == null) await loadDatabase();
+
+      const update = events["connection.update"];
+
+      await connectionUpdate(connectToWhatsApp, conn, update);
+
+    }
+
+    // credentials updated -- save them
+
+    if (events["creds.update"]) {
+
+      await saveCreds();
+
+    }
+
+    
+
+    // received a new message
+
+    if (events["messages.upsert"]) {
+
+      try{
+
+      //if (global.db.data) global.db.write();
+
+      const chatUpdate = events["messages.upsert"];
+
+      if (!chatUpdate.messages) return //console.log('!chatUpdate.messages')
+
+      let m = chatUpdate.messages[0];
+
+      if (!m) return;
+
+      if (m.key.fromMe) return; // Abaikan pesan yang dikirim oleh bot sendiri
+
+  if (m.message?.viewOnceMessageV2) m.message = m.message.viewOnceMessageV2.message;
+
+  if (m.message?.documentWithCaptionMessage) m.message = m.message.documentWithCaptionMessage.message;
+
+  if (m.message?.viewOnceMessageV2Extension) m.message = m.message.viewOnceMessageV2Extension.message;
+
+    //console.log(m)
+
+      //console.log('!chatUpdate.messages')
+
+      //chatUpdate.messages[chatUpdate.messages.length - 1] // ||
+
+      
+
+   
+
+      if (m.key && m.key.remoteJid === 'status@broadcast') {return}
+
+      if (!m.message) return  
+
+      if (m.key.id && m.key.id.length === 22 || m.key.id.startsWith('3EB0') && m.key.id.length === 12 || false) {return}  
+
+      const { register } = await import(`./message/register.js?v=${Date.now()}`).catch((err) => console.log(err));
+
+      m = await smsg(conn, m);
+
+      const { handler } = await import(`./handler.js?v=${Date.now()}`).catch(
+
+        (err) => console.log(err)
+
+      );
+
+      
+
+      if (m.messageStubParameters && m.messageStubParameters[0] === "Message absent from node") {
+
+        conn.sendMessageAck(JSON.parse(m.messageStubParameters[1], BufferJSON.reviver));
+
+    }
+
+      await register(m);
+
+      if (global.db.data)  global.db.write();
+
+      handler(conn, m, chatUpdate, store);
+
+      } catch(err){
+
+        log(err)
+
+        let e = util.format(err)
+
+         conn.sendMessage(ownerBot, {text:e})
+
+      }
+
+    }
+
+    //Anti Call
+
+    if (events.call) {
+
+      const node = events.call;
+
+      antiCall(db, node, conn);
+
+    }
+
+    //Member Update
+
+    if (events["group-participants.update"]) {
+
+      const anu = events["group-participants.update"];
+
+      if (global.db.data == null) await loadDatabase();
+
+      memberUpdate(conn, anu);
+
+    }
+
+    //------------------------------------[BATAS]--------------------------------\\
+
+  });
+
+  global.reloadHandler = async function (restatConn) {};
+
+  const pluginFolder = path.join(__dirname, "./plugins");
+
+  const pluginFilter = (filename) => /\.js$/.test(filename);
+
+  global.plugins = {};
+
+  async function filesInit(folderPath) {
+
+    const files = readdirSync(folderPath);
+
+    for (let file of files) {
+
+      const filePath = join(folderPath, file);
+
+      const fileStat = statSync(filePath);
+
+      if (fileStat.isDirectory()) {
+
+        // Jika file adalah sebuah direktori, panggil kembali fungsi filesInit dengan folder baru sebagai parameter
+
+        await filesInit(filePath);
+
+      } else if (pluginFilter(file)) {
+
+        // Jika file adalah file JavaScript, lakukan inisialisasi
+
+        try {
+
+          const module = await import("file://" + filePath);
+
+          global.plugins[file] = module.default || module;
+
+        } catch (e) {
+
+          conn.logger.error(e);
+
+          delete global.plugins[file];
+
+        }
+
+      }
+
+    }
+
+  }
+
+  filesInit(pluginFolder);
+
+  global.reload = async (_ev, filename) => {
+
+    //console.log(filename)
+
+    if (pluginFilter(filename)) {
+
+      let dir = global.__filename(join(filename), true); //pluginFolder,
+
+      if (filename in global.plugins) {
+
+        if (existsSync(dir))
+
+          console.log(
+
+            chalk.bgGreen(chalk.black("[ UPDATE ]")),
+
+            chalk.white(`${filename}`)
+
+          );
+
+        // conn.logger.info(`re - require plugin '${filename}'`);
+
+        else {
+
+          conn.logger.warn(`deleted plugin '${filename}'`);
+
+          return delete global.plugins[filename];
+
+        }
+
+      } else
+
+        console.log(
+
+          chalk.bgGreen(chalk.black("[ UPDATE ]")),
+
+          chalk.white(`${filename}`)
+
+        ); //;conn.logger.info(`requiring new plugin '${filename}'`);
+
+      //console.log(dir)
+
+      let err = syntaxerror(readFileSync(dir), filename, {
+
+        sourceType: "module",
+
+        allowAwaitOutsideFunction: true,
+
+      });
+
+      if (err)
+
+        conn.logger.error(
+
+          `syntax error while loading '${filename}'\n${format(err)}`
+
+        );
+
+      else
+
+        try {
+
+          const module = await import(
+
+            `${global.__filename(dir)}?update=${Date.now()}`
+
+          );
+
+          global.plugins[filename] = module.default || module;
+
+        } catch (e) {
+
+          conn.logger.error(`error require plugin '${filename}\n${format(e)}'`);
+
+        } finally {
+
+          global.plugins = Object.fromEntries(
+
+            Object.entries(global.plugins).sort(([a], [b]) =>
+
+              a.localeCompare(b)
+
+            )
+
+          );
+
+        }
+
+    }
+
+  };
+
+  // Buat instance Chokidar watcher
+
+  const watcher = chokidar.watch(pluginFolder, {
+
+    ignored: /(^|[\/\\])\../, // ignore dotfiles
+
+    persistent: true,
+
+    depth: 99, // Tentukan kedalaman rekursi
+
+    awaitWriteFinish: {
+
+      stabilityThreshold: 2000,
+
+      pollInterval: 100,
+
+    },
+
+  });
+
+  // Tambahkan event listener untuk memantau perubahan
+
+  watcher.on("all", (event, path) => {
+
+    // Panggil fungsi reload jika file yang berubah adalah file JavaScript
+
+    if (event === "change" && path.endsWith(".js")) {
+
+      const filename = path.split("/").pop(); // Dapatkan nama file dari path
+
+      global.reload(null, filename); // Panggil fungsi reload dengan null untuk _ev dan nama file
+
+    }
+
+  });
+
+  Object.freeze(global.reload);
+
+  watch(pluginFolder, global.reload);
+
+  //await global.reloadHandler()
+
+  Function(conn);
+
+  return conn;
+
 };
 
-// Start connection
 connectToWhatsApp();
 
-// Error handlers
 process.on("uncaughtException", function (err) {
-  const e = String(err);
+
+  let e = String(err);
+
   if (e.includes("Socket connection timeout")) return;
+
+  if (e.includes("rate-overlimit")) return;
+
   if (e.includes("Connection Closed")) return;
-  console.log(chalk.red("Uncaught Exception: ", err.message));
+
+  if (e.includes("Timed Out")) return;
+
+  if (e.includes("Value not found")) return;
+
+  console.log("Caught exception: ", err);
+
 });
 
 process.on("warning", (warning) => {
-  console.log(chalk.yellow(`Warning: ${warning.message}`));
-});
 
-process.on("unhandledRejection", (reason, promise) => {
-  console.log(chalk.red('Unhandled Rejection at:', promise, 'reason:', reason));
+  console.warn(warning.name); // Cetak nama peringatan
+
+  console.warn(warning.message); // Cetak pesan peringatan
+
+  console.warn(warning.stack); // Cetak stack trace
+
 });
