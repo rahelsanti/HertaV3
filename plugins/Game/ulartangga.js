@@ -1,5 +1,5 @@
 import fs from "fs";
-import Jimp from "jimp";
+import * as Jimp from "jimp";
 
 const getRandom = (array) => {
     return array[Math.floor(Math.random() * array.length)];

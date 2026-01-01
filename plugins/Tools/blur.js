@@ -1,4 +1,4 @@
-import jimp from 'jimp'
+import * as jimp from 'jimp'
 
 let handler = async (m, { conn, text }) => {
 	let image = m.message?.imageMessage

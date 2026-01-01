@@ -716,6 +716,7 @@ return
 if (e.includes('Connection Closed')){ return }
 if (e.includes('Timed Out')){ return }
 if (e.includes('Value not found')){ return }
+if (e.toLowerCase().includes('forbidden')) { return }
 console.log(chalk.white('Message Error : %s'), chalk.green(util.format(e)))
 }
 

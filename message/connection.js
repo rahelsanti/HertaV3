@@ -4,7 +4,7 @@ const {
   Browsers,
   DisconnectReason,
   fetchLatestBaileysVersion,
-} = (await import("baileys")).default;
+} = await import("baileys");
 import chalk from "chalk";
 import { Boom } from "@hapi/boom";
 import spin from "spinnies";
@@ -110,31 +110,46 @@ async function saveSessionToGitHub() {
       sha = data?.sha || null;
     } catch (err) {
       // File belum ada, biarkan sha null
-      if (err.status !== 404) {
+      if (err.status === 404) {
+        // not found, proceed to create
+      } else if (err.status === 401) {
+        console.error(chalk.red("GitHub credentials invalid (401), disabling GitHub save"));
+        global.heroku = false;
+        return;
+      } else {
         console.error(chalk.red("Error checking existing file:"), err.message);
         return;
       }
     }
 
     // Upload/update file ke GitHub
-    await octokit.repos.createOrUpdateFileContents({
-      owner: global.username,
-      repo: global.repo,
-      path: filePath,
-      message: `Update session/creds.json via bot`,
-      content: contentBuffer.toString('base64'),
-      sha: sha || undefined,
-      committer: {
-        name: 'WhatsApp Bot',
-        email: 'bot@whatsapp.dev'
-      },
-      author: {
-        name: 'WhatsApp Bot',
-        email: 'bot@whatsapp.dev'
-      }
-    });
+    try {
+      await octokit.repos.createOrUpdateFileContents({
+        owner: global.username,
+        repo: global.repo,
+        path: filePath,
+        message: `Update session/creds.json via bot`,
+        content: contentBuffer.toString('base64'),
+        sha: sha || undefined,
+        committer: {
+          name: 'WhatsApp Bot',
+          email: 'bot@whatsapp.dev'
+        },
+        author: {
+          name: 'WhatsApp Bot',
+          email: 'bot@whatsapp.dev'
+        }
+      });
 
-    console.log(chalk.green("✅ Session successfully saved to GitHub!"));
+      console.log(chalk.green("✅ Session successfully saved to GitHub!"));
+    } catch (err) {
+      if (err.status === 401) {
+        console.error(chalk.red("Failed to save session to GitHub: Bad credentials (401). Disabling GitHub save."));
+        global.heroku = false;
+      } else {
+        console.error(chalk.red("Failed to save session to GitHub:"), err.message);
+      }
+    }
     
   } catch (error) {
     console.error(chalk.red("❌ Failed to save session to GitHub:"), error.message);

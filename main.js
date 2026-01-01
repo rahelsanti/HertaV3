@@ -18,7 +18,7 @@ const {
 
   getAggregateVotesInPollMessage
 
-} = (await import("baileys")).default;
+} = await import("baileys");
 
 import fs, { readdirSync, existsSync, readFileSync, watch, statSync } from "fs";
 
@@ -140,11 +140,23 @@ const connectToWhatsApp = async () => {
 
   const { state, saveCreds } = await useMultiFileAuthState(session);
 
-  const store = makeInMemoryStore({
+  const store = (typeof makeInMemoryStore === 'function') ? makeInMemoryStore({
 
     logger: logg().child({ level: "fatal", stream: "store" }),
 
-  });
+  }) : (function(){
+    const st = {
+      chats: new Map(),
+      contacts: {},
+      messages: {},
+      bind: ()=>{},
+      readFromFile: ()=>{},
+      writeToFile: ()=>{},
+      loadMessage: async ()=> undefined,
+      all: ()=> []
+    };
+    return st;
+  })();
 
   const { version, isLatest } = await fetchLatestBaileysVersion();
 

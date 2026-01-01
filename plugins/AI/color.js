@@ -1,5 +1,5 @@
 import FormData from "form-data";
-import Jimp from "jimp";
+import * as Jimp from "jimp";
 
 async function processing(urlPath, method) {
   return new Promise(async (resolve, reject) => {

@@ -1,6 +1,6 @@
 let handler = m => m;
 
-const { generateWAMessageFromContent, proto } = (await import("baileys")).default;
+const { generateWAMessageFromContent, proto } = await import("baileys");
 
 handler.before = async function () {
   try {

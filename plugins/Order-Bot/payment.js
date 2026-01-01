@@ -1,5 +1,5 @@
 let handler  = async (m, { conn, isOwner}) => {
- const { generateWAMessageFromContent, proto, prepareWAMessageMedia } = (await import("baileys")).default
+ const { generateWAMessageFromContent, proto, prepareWAMessageMedia } = await import("baileys")
 let msgs = generateWAMessageFromContent(m.chat, {
   viewOnceMessage: {
     message: {

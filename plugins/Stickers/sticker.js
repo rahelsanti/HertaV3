@@ -9,7 +9,7 @@ let handler = async (m, { q, conn, isOwner, setReply }) => {
   const isQuotedViewOnce =
     m.type === "extendedTextMessage" && m.content.includes("viewOnceMessage");
   const quoted = m.quoted ? m.quoted : m.msg === undefined ? m : m.msg;
-  const { downloadContentFromMessage } = (await import("baileys")).default;
+  const { downloadContentFromMessage } = await import("baileys");
 
   // Cek jika tidak ada media yang disertakan
   if (

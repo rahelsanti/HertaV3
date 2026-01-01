@@ -2,7 +2,7 @@ let handler = async (m, { conn, command, args }) => {
   let user = global.db.data.users[m.sender];
   let totalEksplorasi = user.sand || 0;
   let ekplorasiFormatted = totalEksplorasi.toLocaleString('en-US');
-  const { generateWAMessageFromContent, proto, prepareWAMessageMedia } = (await import("baileys")).default;
+  const { generateWAMessageFromContent, proto, prepareWAMessageMedia } = await import("baileys");
   
   let mentionedJid = [m.sender];
   
