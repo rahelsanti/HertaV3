@@ -1,10 +1,5 @@
 "use strict";
-const {
-  default: makeWASocket,
-  Browsers,
-  DisconnectReason,
-  fetchLatestBaileysVersion,
-} = await import("baileys");
+const { default: { makeWASocket } , Browsers, DisconnectReason, fetchLatestBaileysVersion } = await import("baileys");
 import chalk from "chalk";
 import { Boom } from "@hapi/boom";
 import spin from "spinnies";
