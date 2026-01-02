@@ -97,7 +97,7 @@ const isPremium = isOwner ? true :  db.data.users[sender].premiumTime !== 0
 
 
 
-if((time > "00:00" && time < "05:00") && !isGroup & !isPremium) {return}
+if((time > "00:00" && time < "05:00") && !isGroup && !isPremium) {return}
 
 //Anti sticker gay
 let antiSticker = db.data.others["antiSticker"]
@@ -110,7 +110,7 @@ await sleep(1000)
 
 if(delayRespon !== 0) await sleep(delayRespon)
 //AUTO Read Message 
-conn.readMessages([m.key])
+try { if (db.data.settings['settingbot'].autoRead) await conn.readMessages([m.key]); } catch (e) { console.error('AutoRead failed', e); }
 if(delayRespon !== 0) await sleep(delayRespon)
 if(m.isGroup && m.groupMembers.length >= 800) {return}
 

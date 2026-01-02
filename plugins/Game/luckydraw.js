@@ -59,11 +59,14 @@ export const handler = async (m, { text, conn }) => {
 
         // List all participants and check for winners
         conn.luckydraw[m.chat].tickets.forEach(entry => {
-            message += `- @${entry.user.replace('@s.whatsapp.net', '')}\n   Nomor Tiket: ${entry.ticket}\n   Taruhan: Rp.${entry.bet}\n`;
+            const shortId = (conn.decodeJid ? conn.decodeJid(entry.user) : entry.user || '').split('@')[0];
+            message += `- @${shortId}\n   Nomor Tiket: ${entry.ticket}\n   Taruhan: Rp.${entry.bet}\n`;
             mentions.push(entry.user);
 
             if (entry.ticket === winningNumber) {
                 const prize = entry.bet * 10;
+                // ensure user object exists
+                global.db.data.users[entry.user] = global.db.data.users[entry.user] || { money: 0 };
                 global.db.data.users[entry.user].money += prize;
                 winners.push({ user: entry.user, prize });
             }
@@ -81,7 +84,8 @@ export const handler = async (m, { text, conn }) => {
             // Add winner announcement to the message
             message += "\n🎉 Pemenang:\n";
             winners.forEach(winner => {
-                message += `- Selamat! @${winner.user.replace('@s.whatsapp.net', '')} memenangkan Rp.${winner.prize}!\n`;
+                const winnerShort = (conn.decodeJid ? conn.decodeJid(winner.user) : winner.user || '').split('@')[0];
+                message += `- Selamat! @${winnerShort} memenangkan Rp.${winner.prize}!\n`;
                 mentions.push(winner.user);
             });
 

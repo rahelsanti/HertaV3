@@ -67,6 +67,7 @@ global.isNumber = isNumber;
     if (!("autoLevel" in settings)) settings.autoLevel = true;
     if (!("autoSticker" in settings)) settings.autoSticker = false;
     if (!("publik" in settings)) settings.publik = true;
+    if (!("autoRead" in settings)) settings.autoRead = true;
     if (!("autoDelSessi" in settings)) settings.autoDelSessi = false;
     if (!("autoDelTmp" in settings)) settings.autoDelTmp = false;
     if (!("gcOnly" in settings)) settings.gcOnly = false;

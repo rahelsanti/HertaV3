@@ -384,6 +384,16 @@ const connectToWhatsApp = async () => {
 
       if (!m) return;
 
+      // Debug: log incoming message summary to help see owner/user DMs
+      try {
+        const senderLog = m.key?.participant || m.key?.remoteJid || 'unknown';
+        const jid = m.key?.remoteJid || 'unknown';
+        const msgType = Object.keys(m.message || {})[0] || 'unknown';
+        console.log(`[MSG] from=${senderLog} chat=${jid} id=${m.key?.id} type=${msgType} fromMe=${!!m.key?.fromMe}`);
+      } catch (e) {
+        // ignore
+      }
+
       if (m.key.fromMe) return; // Abaikan pesan yang dikirim oleh bot sendiri
 
   if (m.message?.viewOnceMessageV2) m.message = m.message.viewOnceMessageV2.message;
@@ -473,6 +483,28 @@ const connectToWhatsApp = async () => {
   global.reloadHandler = async function (restatConn) {};
 
   const pluginFolder = path.join(__dirname, "./plugins");
+
+  // Periodic check: verify Elaina Baileys npm version vs installed and warn if newer
+  import { exec } from 'child_process';
+  async function checkBaileysUpdates() {
+    try {
+      exec('npm view @rexxhayanasi/elaina-baileys version', (err, stdout) => {
+        if (err) return console.error('Baileys update check failed', err.message);
+        const latest = stdout.trim();
+        const installed = (require('./package.json').dependencies || {}).baileys || '';
+        if (installed && installed.includes(latest)) {
+          console.log('Elaina Baileys is up-to-date:', latest);
+        } else {
+          console.log('Elaina Baileys update available:', { installed, latest });
+        }
+      });
+    } catch (e) {
+      console.error('checkBaileysUpdates error', e.message);
+    }
+  }
+  checkBaileysUpdates();
+  setInterval(checkBaileysUpdates, 1000 * 60 * 60 * 24); // check daily
+
 
   const pluginFilter = (filename) => /\.js$/.test(filename);
 
